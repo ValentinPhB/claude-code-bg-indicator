@@ -107,6 +107,10 @@ type Describable = { description?: string; command?: string; type?: string }
 export const labelOf = (item: Describable) =>
   clip((item.description || item.command || item.type || 'task').replace(/\s+/g, ' ').trim(), MAX_WIDTH)
 
+/** A wake-up that will resume the session later: shown with a clock and the prompt it will submit. */
+export const scheduledLabel = (prompt: string) =>
+  `⏰ ${clip((prompt || 'scheduled').replace(/\s+/g, ' ').trim(), MAX_WIDTH - 3)}`
+
 export const register: Register = on => {
   let word = wordFor('en')
 
@@ -147,11 +151,14 @@ export const register: Register = on => {
     return next(e)
   })
 
-  // Authoritative state: at the end of a turn the engine lists the work still in flight.
+  // Authoritative state, read every time control returns to the user: the engine lists the background work
+  // still in flight and the wake-ups scheduled to resume the session later (ScheduleWakeup, /loop, cron).
+  // Either one means "something is still going on", even though the prompt looks idle.
   on('classic.Stop', async ($, e, next) => {
-    if (Array.isArray(e.background_tasks)) {
-      const running = e.background_tasks.map(t => ({ id: t.id, label: labelOf(t) }))
-      await update($, tasks, () => running)
+    if (Array.isArray(e.background_tasks) || Array.isArray(e.session_crons)) {
+      const running = (e.background_tasks ?? []).map(t => ({ id: t.id, label: labelOf(t) }))
+      const scheduled = (e.session_crons ?? []).map(c => ({ id: c.id, label: scheduledLabel(c.prompt) }))
+      await update($, tasks, () => [...running, ...scheduled])
     }
 
     return next(e)

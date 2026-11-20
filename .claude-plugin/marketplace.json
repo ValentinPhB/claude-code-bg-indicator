@@ -7,7 +7,7 @@
     {
       "name": "bg-indicator",
       "source": "./",
-      "description": "See Claude Code background tasks at a glance: a live, multilingual band above the prompt for running shell commands, monitors and subagents",
+      "description": "See what is still running when Claude hands control back: a live, multilingual band above the prompt for background shell commands, monitors, subagents and scheduled wake-ups",
       "keywords": [
         "claude-code",
         "background-tasks",
@@ -18,7 +18,9 @@
         "status",
         "ui",
         "multilingual",
-        "i18n"
+        "i18n",
+        "scheduled-tasks",
+        "loop"
       ]
     }
   ]

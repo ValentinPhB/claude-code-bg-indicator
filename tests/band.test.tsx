@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 
-import { clip, pickLanguage, wordFor } from '../hooks/register'
+import { clip, pickLanguage, scheduledLabel, wordFor } from '../hooks/register'
 
 const BAND = {
   plugin: 'bg-indicator',
@@ -115,4 +115,27 @@ test('the band word follows the language setting, with descriptions in any scrip
   expect((await ui.find({ type: 'Text', text: /Arrière-plan/ }))?.text).toBe('Arrière-plan ')
   expect((await ui.find({ type: 'Text', text: /部署/ }))?.text).toBe('部署 API サーバー')
   await ui.unmount()
+})
+
+test('a wake-up scheduled for later keeps the band lit when control returns', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  await $.classic.Stop({
+    stop_hook_active: false,
+    background_tasks: [],
+    session_crons: [{ id: 'c1', schedule: '*/10 * * * *', recurring: true, prompt: 'Check the deployment' }],
+  })
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /Check the deployment/ }))?.text).toBe('⏰ Check the deployment')
+  await ui.unmount()
+
+  await $.classic.Stop({ stop_hook_active: false, background_tasks: [], session_crons: [] })
+  const after = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await after.find({ type: 'Text', text: /Check the deployment/ })).toBeUndefined()
+  await after.unmount()
+})
+
+test('a scheduled label is clipped by columns and never empty', () => {
+  expect(scheduledLabel('')).toBe('⏰ scheduled')
+  expect(Array.from(scheduledLabel('x'.repeat(200))).length).toBeLessThanOrEqual(60)
 })
