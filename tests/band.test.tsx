@@ -75,7 +75,7 @@ const logFiles = (on: On, content: string, size = 400) => {
   on('fs.read', () => ({ value: content }))
 }
 
-const WORDS = ['Background task', 'Background Tasks']
+const WORDS = ['Background Tasks']
 
 /** What `$.process.run` answers when the command ran and ended with that exit code. */
 const exited = (exitCode: number, stderr = '') => ({
@@ -93,13 +93,13 @@ test('the band is hidden while nothing runs in the background', async ($, on) =>
   await ui.unmount()
 })
 
-test('with one task the title is "Background task" and the task itself', async ($, on) => {
+test('with one task the title is the same as with several: "Background Tasks (1)"', async ($, on) => {
   on('classic.Stop', () => ({}))
   await stopWith($, [{ type: 'shell', text: 'Deploy the API' }])
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /^Background task/ }))?.text).toBe('Background task ')
-  expect((await ui.find({ type: 'Text', text: /Deploy the API/ }))?.text).toBe('Deploy the API ')
+  expect((await ui.find({ type: 'Text', text: /^Background Tasks/ }))?.text).toBe('Background Tasks ')
+  expect((await ui.find({ type: 'Text', text: /^\(1\)/ }))?.text).toBe('(1) ')
   expect((await ui.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▾')
   await ui.unmount()
 })
@@ -127,10 +127,11 @@ test('the title follows the number of tasks as it changes', async ($, on) => {
     { type: 'shell', text: 'Two' },
   ])
   await stopWith($, [{ type: 'shell', text: 'Only the last one' }])
+  await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect(await ui.find({ type: 'Text', text: /Background Tasks/ })).toBeUndefined()
-  expect((await ui.find({ type: 'Text', text: /Only the last one/ }))?.text).toBe('Only the last one ')
+  expect((await ui.find({ type: 'Text', text: /^\(/ }))?.text).toBe('(1) ')
+  expect((await ui.find({ type: 'Text', text: /Only the last one/ }))?.text).toBe('1. Only the last one ')
   await ui.unmount()
 })
 
@@ -143,8 +144,9 @@ test('a tool call started in the background shows at once', async ($, on) => {
     tool_use_id: 't1',
   })
 
+  await toggle($)
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /Long job/ }))?.text).toBe('Long job ')
+  expect((await ui.find({ type: 'Text', text: /Long job/ }))?.text).toBe('1. Long job ')
   await ui.unmount()
 })
 
@@ -170,8 +172,9 @@ test('a wake-up scheduled for later keeps the band lit when control returns', as
     session_crons: [{ id: 'c1', schedule: '*/10 * * * *', recurring: true, prompt: 'Check the deployment' }],
   })
 
+  await toggle($)
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /Check the deployment/ }))?.text).toBe('⏰ Check the deployment ')
+  expect((await ui.find({ type: 'Text', text: /Check the deployment/ }))?.text).toBe('1. ⏰ Check the deployment ')
   await ui.unmount()
 
   await $.classic.Stop({ stop_hook_active: false, background_tasks: [], session_crons: [] })
@@ -192,14 +195,14 @@ test('the language comes from the Claude Code setting, then the locale variables
   expect(pickLanguage(undefined, 'C.UTF-8', 'pt_BR.UTF-8')).toBe('pt')
   expect(pickLanguage('Trad-nothing')).toBe('en')
   expect(pickLanguage(undefined, undefined)).toBe('en')
-  expect(wordFor('fr')).toBe('Tâche en arrière-plan')
-  expect(wordFor('xx')).toBe('Background task')
+  expect(wordFor('fr')).toBe('Tâches en arrière-plan')
+  expect(wordFor('xx')).toBe('Background Tasks')
 })
 
 test('every language has every phrase', () => {
   for (const code of ['en', 'fr', 'es', 'de', 'pt', 'it', 'nl', 'pl', 'sv', 'tr', 'ru', 'uk', 'ja', 'zh', 'zh-tw', 'ko', 'vi', 'id']) {
     const texts = textsFor(code)
-    for (const phrase of [texts.background, texts.tasks, texts.noLog, texts.empty, texts.noTerminal]) {
+    for (const phrase of [texts.tasks, texts.noLog, texts.empty, texts.noTerminal]) {
       expect(phrase.length).toBeGreaterThan(0)
     }
   }
@@ -216,9 +219,10 @@ test('the band follows the language setting, with descriptions in any script', a
 
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
   await stopWith($, [{ type: 'shell', text: '部署 API サーバー' }])
+  await toggle($)
   const one = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await one.find({ type: 'Text', text: /Tâche en arrière-plan/ }))?.text).toBe('Tâche en arrière-plan ')
-  expect((await one.find({ type: 'Text', text: /部署/ }))?.text).toBe('部署 API サーバー ')
+  expect((await one.find({ type: 'Text', text: /Tâches en arrière-plan/ }))?.text).toBe('Tâches en arrière-plan ')
+  expect((await one.find({ type: 'Text', text: /部署/ }))?.text).toBe('1. 部署 API サーバー ')
   await one.unmount()
 
   await stopWith($, [

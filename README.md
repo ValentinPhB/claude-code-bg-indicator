@@ -5,11 +5,11 @@ are running**: shell commands started with `run_in_background`, monitors and sub
 still working on something?"*
 
 ```
-⠹ Background task  Deploy the API ▾              one task: its own description
-⠹ Background Tasks (3) ▾                    several tasks: just their number
+⠹ Background Tasks (1) ▾                    one task
+⠹ Background Tasks (3) ▾                    several tasks
 ```
 
-It appears the moment a tool call moves work to the background, shows the task's description when there is one task, or just `Background Tasks (N)` when there are several, animates while anything runs, and disappears by itself when nothing is left. It is re-checked **every time Claude hands control back to you**, so a prompt that looks idle never hides something that is still running or scheduled to wake the session later.
+It appears the moment a tool call moves work to the background, shows `Background Tasks (N)` (the same title for one task or several, the descriptions are one press away), animates while anything runs, and disappears by itself when nothing is left. It is re-checked **every time Claude hands control back to you**, so a prompt that looks idle never hides something that is still running or scheduled to wake the session later.
 
 - Zero configuration, zero dependency, no network. It reads the log files of your own background tasks, and only when you press `>_` does it write one small script in your temporary folder and open a terminal.
 - Works with background Bash commands, `Monitor` tasks, background subagents and scheduled wake-ups (`ScheduleWakeup`, `/loop`).
@@ -70,8 +70,7 @@ it permanent for every session (including the ones an IDE extension starts) by a
 
 ## Unfold the list, read the logs
 
-**The title.** With **one** task the band names it: `⠹ Background task  Deploy the API ▾`. With **several** it only says
-`⠹ Background Tasks (3) ▾`, so the title never pretends that the first task is the only one. The `▾` button unfolds the list.
+**The title.** One title, `⠹ Background Tasks (N) ▾`, for one task as for several, so it never pretends that the first task is the only one. The `▾` button unfolds the list, where each task is named.
 
 Unfolded, you see **every** background task (from 1 to N), one per row. A row is plain text, **not** one big button: only
 the small buttons at its end are clickable, so the band stays easy to read.
@@ -159,17 +158,17 @@ Claude Code.
 
 ## Languages
 
-The only words the mod writes itself are the band title (one task or several) and a few short notices. It follows, in this order, Claude Code's own `language`
+The only words the mod writes itself are the band title and a few short notices. It follows, in this order, Claude Code's own `language`
 setting, then the `LC_ALL`, `LC_MESSAGES` and `LANG` environment variables, and falls back to English.
 
-| Code | Label (one task) | Code | Label (one task) | Code | Label (one task) |
+| Code | Title | Code | Title | Code | Title |
 | --- | --- | --- | --- | --- | --- |
-| `en` | Background task | `nl` | Achtergrondtaak | `ja` | バックグラウンドタスク |
-| `fr` | Tâche en arrière-plan | `pl` | Zadanie w tle | `zh` | 后台任务 |
-| `es` | Tarea en segundo plano | `sv` | Bakgrundsuppgift | `zh-tw` | 背景任務 |
-| `de` | Hintergrundaufgabe | `tr` | Arka plan görevi | `ko` | 백그라운드 작업 |
-| `pt` | Tarefa em segundo plano | `ru` | Фоновая задача | `vi` | Tác vụ nền |
-| `it` | Attività in background | `uk` | Фонове завдання | `id` | Tugas latar belakang |
+| `en` | Background Tasks | `nl` | Achtergrondtaken | `ja` | バックグラウンドタスク |
+| `fr` | Tâches en arrière-plan | `pl` | Zadania w tle | `zh` | 后台任务 |
+| `es` | Tareas en segundo plano | `sv` | Bakgrundsuppgifter | `zh-tw` | 背景任務 |
+| `de` | Hintergrundaufgaben | `tr` | Arka plan görevleri | `ko` | 백그라운드 작업 |
+| `pt` | Tarefas em segundo plano | `ru` | Фоновые задачи | `vi` | Tác vụ nền |
+| `it` | Attività in background | `uk` | Фонові завдання | `id` | Tugas latar belakang |
 
 - Task descriptions come from your session and are shown as they are, in any script (Latin, Cyrillic, CJK, emoji...).
 - Long descriptions are clipped by **terminal columns**, not by characters: CJK characters and emoji take two columns,

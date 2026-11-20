@@ -26,7 +26,6 @@ const LOG_BYTES = 32768
 // session and are shown as they are, in any script. To add a language, add a line to
 // MESSAGES (key = lowercase language code) and one to ALIASES.
 export type Texts = {
-  background: string
   tasks: string
   noLog: string
   empty: string
@@ -34,24 +33,24 @@ export type Texts = {
 }
 
 const MESSAGES: Record<string, Texts> = {
-  en: { background: 'Background task', tasks: 'Background Tasks', noLog: 'No log available', empty: 'Log is empty', noTerminal: 'No terminal found' },
-  fr: { background: 'Tâche en arrière-plan', tasks: 'Tâches en arrière-plan', noLog: 'Aucun journal disponible', empty: 'Journal vide', noTerminal: 'Aucun terminal trouvé' },
-  es: { background: 'Tarea en segundo plano', tasks: 'Tareas en segundo plano', noLog: 'Sin registro disponible', empty: 'Registro vacío', noTerminal: 'No se encontró un terminal' },
-  de: { background: 'Hintergrundaufgabe', tasks: 'Hintergrundaufgaben', noLog: 'Kein Protokoll verfügbar', empty: 'Protokoll ist leer', noTerminal: 'Kein Terminal gefunden' },
-  pt: { background: 'Tarefa em segundo plano', tasks: 'Tarefas em segundo plano', noLog: 'Nenhum registro disponível', empty: 'Registro vazio', noTerminal: 'Nenhum terminal encontrado' },
-  it: { background: 'Attività in background', tasks: 'Attività in background', noLog: 'Nessun log disponibile', empty: 'Log vuoto', noTerminal: 'Nessun terminale trovato' },
-  nl: { background: 'Achtergrondtaak', tasks: 'Achtergrondtaken', noLog: 'Geen log beschikbaar', empty: 'Log is leeg', noTerminal: 'Geen terminal gevonden' },
-  pl: { background: 'Zadanie w tle', tasks: 'Zadania w tle', noLog: 'Brak dziennika', empty: 'Dziennik jest pusty', noTerminal: 'Nie znaleziono terminala' },
-  sv: { background: 'Bakgrundsuppgift', tasks: 'Bakgrundsuppgifter', noLog: 'Ingen logg tillgänglig', empty: 'Loggen är tom', noTerminal: 'Ingen terminal hittades' },
-  tr: { background: 'Arka plan görevi', tasks: 'Arka plan görevleri', noLog: 'Günlük yok', empty: 'Günlük boş', noTerminal: 'Terminal bulunamadı' },
-  ru: { background: 'Фоновая задача', tasks: 'Фоновые задачи', noLog: 'Журнал недоступен', empty: 'Журнал пуст', noTerminal: 'Терминал не найден' },
-  uk: { background: 'Фонове завдання', tasks: 'Фонові завдання', noLog: 'Журнал недоступний', empty: 'Журнал порожній', noTerminal: 'Термінал не знайдено' },
-  ja: { background: 'バックグラウンドタスク', tasks: 'バックグラウンドタスク', noLog: 'ログはありません', empty: 'ログは空です', noTerminal: 'ターミナルが見つかりません' },
-  zh: { background: '后台任务', tasks: '后台任务', noLog: '没有可用日志', empty: '日志为空', noTerminal: '未找到终端' },
-  'zh-tw': { background: '背景任務', tasks: '背景任務', noLog: '沒有可用的記錄', empty: '記錄是空的', noTerminal: '找不到終端機' },
-  ko: { background: '백그라운드 작업', tasks: '백그라운드 작업', noLog: '사용 가능한 로그가 없습니다', empty: '로그가 비어 있습니다', noTerminal: '터미널을 찾을 수 없습니다' },
-  vi: { background: 'Tác vụ nền', tasks: 'Tác vụ nền', noLog: 'Không có nhật ký', empty: 'Nhật ký trống', noTerminal: 'Không tìm thấy terminal' },
-  id: { background: 'Tugas latar belakang', tasks: 'Tugas latar belakang', noLog: 'Log tidak tersedia', empty: 'Log kosong', noTerminal: 'Terminal tidak ditemukan' },
+  en: { tasks: 'Background Tasks', noLog: 'No log available', empty: 'Log is empty', noTerminal: 'No terminal found' },
+  fr: { tasks: 'Tâches en arrière-plan', noLog: 'Aucun journal disponible', empty: 'Journal vide', noTerminal: 'Aucun terminal trouvé' },
+  es: { tasks: 'Tareas en segundo plano', noLog: 'Sin registro disponible', empty: 'Registro vacío', noTerminal: 'No se encontró un terminal' },
+  de: { tasks: 'Hintergrundaufgaben', noLog: 'Kein Protokoll verfügbar', empty: 'Protokoll ist leer', noTerminal: 'Kein Terminal gefunden' },
+  pt: { tasks: 'Tarefas em segundo plano', noLog: 'Nenhum registro disponível', empty: 'Registro vazio', noTerminal: 'Nenhum terminal encontrado' },
+  it: { tasks: 'Attività in background', noLog: 'Nessun log disponibile', empty: 'Log vuoto', noTerminal: 'Nessun terminale trovato' },
+  nl: { tasks: 'Achtergrondtaken', noLog: 'Geen log beschikbaar', empty: 'Log is leeg', noTerminal: 'Geen terminal gevonden' },
+  pl: { tasks: 'Zadania w tle', noLog: 'Brak dziennika', empty: 'Dziennik jest pusty', noTerminal: 'Nie znaleziono terminala' },
+  sv: { tasks: 'Bakgrundsuppgifter', noLog: 'Ingen logg tillgänglig', empty: 'Loggen är tom', noTerminal: 'Ingen terminal hittades' },
+  tr: { tasks: 'Arka plan görevleri', noLog: 'Günlük yok', empty: 'Günlük boş', noTerminal: 'Terminal bulunamadı' },
+  ru: { tasks: 'Фоновые задачи', noLog: 'Журнал недоступен', empty: 'Журнал пуст', noTerminal: 'Терминал не найден' },
+  uk: { tasks: 'Фонові завдання', noLog: 'Журнал недоступний', empty: 'Журнал порожній', noTerminal: 'Термінал не знайдено' },
+  ja: { tasks: 'バックグラウンドタスク', noLog: 'ログはありません', empty: 'ログは空です', noTerminal: 'ターミナルが見つかりません' },
+  zh: { tasks: '后台任务', noLog: '没有可用日志', empty: '日志为空', noTerminal: '未找到终端' },
+  'zh-tw': { tasks: '背景任務', noLog: '沒有可用的記錄', empty: '記錄是空的', noTerminal: '找不到終端機' },
+  ko: { tasks: '백그라운드 작업', noLog: '사용 가능한 로그가 없습니다', empty: '로그가 비어 있습니다', noTerminal: '터미널을 찾을 수 없습니다' },
+  vi: { tasks: 'Tác vụ nền', noLog: 'Không có nhật ký', empty: 'Nhật ký trống', noTerminal: 'Không tìm thấy terminal' },
+  id: { tasks: 'Tugas latar belakang', noLog: 'Log tidak tersedia', empty: 'Log kosong', noTerminal: 'Terminal tidak ditemukan' },
 }
 
 // A code matches alone or followed by a separator (fr, fr_FR.UTF-8, fr-CA); a name matches as a prefix.
@@ -92,7 +91,6 @@ export const pickLanguage = (...candidates: (string | undefined)[]): string => {
 }
 
 const FALLBACK: Texts = {
-  background: 'Background',
   tasks: 'Background Tasks',
   noLog: 'No log available',
   empty: 'Log is empty',
@@ -102,7 +100,7 @@ const FALLBACK: Texts = {
 export const textsFor = (language: string): Texts => MESSAGES[language] ?? MESSAGES['en'] ?? FALLBACK
 
 /** The label of the band, in the given language. */
-export const wordFor = (language: string) => textsFor(language).background
+export const wordFor = (language: string) => textsFor(language).tasks
 
 // ── Text width ───────────────────────────────────────────────────────────────
 // CJK characters and emoji take two terminal columns; clipping by columns, and by whole characters
@@ -418,7 +416,6 @@ export const register: Register = on => {
     const view = await read($, log)
     const top = await read($, logTop)
     const { Box, Button, Text } = $.ui.resolve(e)
-    const single = list.length === 1
     const shown = list.slice(0, MAX_ROWS)
     const hidden = list.length - shown.length
     // The band is narrow (about 50 columns in VS Code): every line is cut to fit, so none wraps and the rows stay aligned.
@@ -440,12 +437,8 @@ export const register: Register = on => {
     const header = (
       <Box>
         <Text color="yellow" size="caption">{FRAMES[f] ?? FRAMES[0]} </Text>
-        {single
-          ? <Text bold color="yellow" size="caption">{texts.background}{' '}</Text>
-          : <Text bold color="yellow" size="caption">{texts.tasks}{' '}</Text>}
-        {single
-          ? <Text size="caption">{clip(first.label, Math.max(12, columns - 22))}{' '}</Text>
-          : <Text size="caption">{`(${list.length})`}{' '}</Text>}
+        <Text bold color="yellow" size="caption">{texts.tasks}{' '}</Text>
+        <Text size="caption">{`(${list.length})`}{' '}</Text>
         <Button key="toggle" label={isOpen ? '▴' : '▾'} onPress={() => flip(isOpen)}>
           <Text size="caption">{isOpen ? '▴' : '▾'}</Text>
         </Button>
