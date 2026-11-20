@@ -1,7 +1,7 @@
 {
   "name": "bg-indicator",
-  "version": "0.2.0",
-  "description": "See Claude Code background tasks at a glance: a live band above the prompt for running shell commands, monitors and subagents",
+  "version": "0.3.0",
+  "description": "See Claude Code background tasks at a glance: a live, multilingual band above the prompt for running shell commands, monitors and subagents",
   "author": {
     "name": "ValentinPhB"
   },
@@ -20,7 +20,12 @@
     "spinner",
     "status",
     "ui",
-    "prompt-band"
+    "prompt-band",
+    "multilingual",
+    "i18n",
+    "localized",
+    "free",
+    "open-source"
   ],
   "types": "./types/index.d.ts"
 }

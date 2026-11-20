@@ -5,15 +5,16 @@ are running**: shell commands started with `run_in_background`, monitors and sub
 still working on something?"*
 
 ```
-⠹ Background  Deploy the API (+1 more)
+⠹ Background  Deploy the API (+1)
 ```
 
-It appears the moment a tool call moves work to the background, shows the first task's description plus a `(+N more)`
+It appears the moment a tool call moves work to the background, shows the first task's description plus a `(+N)`
 counter, animates while anything runs, and disappears by itself when nothing is left.
 
 - Zero configuration, zero dependency, no network, no file access of its own.
 - Works with background Bash commands, `Monitor` tasks and background subagents.
 - Install in one line, free, MIT licensed.
+- Speaks your language: the band is localized in 18 languages and shows task descriptions in any script.
 
 ## Is there a Claude Code plugin to see background tasks?
 
@@ -67,6 +68,26 @@ it permanent for every session (including the ones an IDE extension starts) by a
 }
 ```
 
+## Languages
+
+The only word the mod writes itself is the label of the band. It follows, in this order, Claude Code's own `language`
+setting, then the `LC_ALL`, `LC_MESSAGES` and `LANG` environment variables, and falls back to English.
+
+| Code | Label | Code | Label | Code | Label |
+| --- | --- | --- | --- | --- | --- |
+| `en` | Background | `nl` | Op de achtergrond | `ja` | バックグラウンド |
+| `fr` | Arrière-plan | `pl` | W tle | `zh` | 后台 |
+| `es` | Segundo plano | `sv` | Bakgrund | `zh-tw` | 背景 |
+| `de` | Hintergrund | `tr` | Arka plan | `ko` | 백그라운드 |
+| `pt` | Segundo plano | `ru` | Фон | `vi` | Nền |
+| `it` | In background | `uk` | Фон | `id` | Latar belakang |
+
+- Task descriptions come from your session and are shown as they are, in any script (Latin, Cyrillic, CJK, emoji...).
+- Long descriptions are clipped by **terminal columns**, not by characters: CJK characters and emoji take two columns,
+  and an emoji is never cut in half.
+- **Add your language**: add one line to `MESSAGES` and one to `ALIASES` in [`hooks/register.tsx`](hooks/register.tsx),
+  then open a pull request. A native speaker's wording is always better than a translation tool's.
+
 ## How it works
 
 The mod is a single hooks module, [`hooks/register.tsx`](hooks/register.tsx), with no dependency and no file or network
@@ -104,6 +125,20 @@ claude plugin test .
 
 Saving `hooks/register.tsx` reloads the module in a session that loads the folder (`--plugin-dir` or
 `CLAUDE_CODE_PLUGIN_DIRS`).
+
+## In other languages
+
+- **Français**: plugin Claude Code pour voir les tâches en arrière-plan. Un bandeau animé au-dessus du prompt indique quand une commande shell, un moniteur ou un sous-agent tourne encore en arrière-plan. Gratuit et open source (MIT).
+- **Español**: plugin de Claude Code para ver las tareas en segundo plano. Una barra animada sobre el prompt indica cuándo un comando de shell, un monitor o un subagente sigue ejecutándose en segundo plano. Gratis y de código abierto (MIT).
+- **Deutsch**: Claude-Code-Plugin, das Hintergrundaufgaben anzeigt. Eine animierte Leiste über dem Prompt zeigt, wann ein Shell-Befehl, ein Monitor oder ein Subagent noch im Hintergrund läuft. Kostenlos und Open Source (MIT).
+- **Português**: plugin do Claude Code para ver tarefas em segundo plano. Uma barra animada acima do prompt mostra quando um comando shell, um monitor ou um subagente ainda está em execução em segundo plano. Gratuito e de código aberto (MIT).
+- **Italiano**: plugin di Claude Code per vedere le attività in background. Una barra animata sopra il prompt mostra quando un comando shell, un monitor o un subagente è ancora in esecuzione in background. Gratuito e open source (MIT).
+- **日本語**: バックグラウンドタスクを表示する Claude Code プラグイン。シェルコマンド、モニター、サブエージェントがバックグラウンドで実行中のあいだ、プロンプトの上にアニメーション付きのバーを表示します。無料のオープンソース (MIT) です。
+- **简体中文**: 用于查看后台任务的 Claude Code 插件。当 shell 命令、监视器或子代理仍在后台运行时，在提示符上方显示动画状态条。免费开源 (MIT)。
+- **한국어**: 백그라운드 작업을 보여 주는 Claude Code 플러그인. 셸 명령, 모니터, 서브에이전트가 백그라운드에서 실행되는 동안 프롬프트 위에 애니메이션 표시줄을 보여 줍니다. 무료 오픈 소스 (MIT)입니다.
+- **Русский**: плагин Claude Code для просмотра фоновых задач. Анимированная полоса над строкой ввода показывает, что shell-команда, монитор или субагент всё ещё работает в фоне. Бесплатно, с открытым исходным кодом (MIT).
+
+The install line is the same in every language: `/plugin install bg-indicator --marketplace ValentinPhB/claude-code-bg-indicator`
 
 ## License
 
