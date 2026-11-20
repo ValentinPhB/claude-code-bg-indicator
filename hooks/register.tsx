@@ -11,8 +11,7 @@ const log = atom({ plugin: 'bg-indicator', key: 'log' } as const, null as LogVie
 /** First visible line of the open log, or null while it follows the end (the live tail). */
 const logTop = atom({ plugin: 'bg-indicator', key: 'logTop' } as const, null as number | null)
 
-// Four dots, one lit at a time: quiet, and it takes few cells.
-const FRAMES = ['●○○○', '○●○○', '○○●○', '○○○●']
+const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 const MAX_WIDTH = 60
 /** Rows of the unfolded list; the rest is summarised so a long list never pushes the prompt off the screen. */
 const MAX_ROWS = 10
@@ -341,7 +340,7 @@ export const register: Register = on => {
     }
 
     // Animate (and so redraw) only while something is running; keep an open log fresh.
-    $.clock.every(700, async () => {
+    $.clock.every(900, async () => {
       const list = await read($, tasks)
       if (list.length === 0) return
       await update($, frame, f => (f + 1) % FRAMES.length)
