@@ -1,7 +1,7 @@
 {
   "name": "bg-indicator",
-  "version": "0.7.0",
-  "description": "See what is still running when Claude hands control back: a live, multilingual, unfoldable band above the prompt, with the scrollable log of each background task one click away",
+  "version": "0.8.0",
+  "description": "See what is still running when Claude hands control back: a live, multilingual, unfoldable band above the prompt, with each background task's scrollable log one click away, or in its own VS Code terminal",
   "author": {
     "name": "ValentinPhB"
   },
@@ -36,7 +36,12 @@
     "task-logs",
     "output",
     "scrollable",
-    "log-viewer"
+    "log-viewer",
+    "scrollbar",
+    "vscode",
+    "terminal",
+    "tail",
+    "watch"
   ],
   "types": "./types/index.d.ts"
 }

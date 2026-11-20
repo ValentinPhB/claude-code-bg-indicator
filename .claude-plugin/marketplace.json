@@ -7,7 +7,7 @@
     {
       "name": "bg-indicator",
       "source": "./",
-      "description": "See what is still running when Claude hands control back: a live, multilingual, unfoldable band above the prompt, with the scrollable log of each background task one click away",
+      "description": "See what is still running when Claude hands control back: a live, multilingual, unfoldable band above the prompt, with each background task's scrollable log one click away, or in its own VS Code terminal",
       "keywords": [
         "claude-code",
         "background-tasks",
@@ -23,7 +23,9 @@
         "loop",
         "expandable",
         "logs",
-        "log-viewer"
+        "log-viewer",
+        "vscode",
+        "scrollbar"
       ]
     }
   ]

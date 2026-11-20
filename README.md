@@ -5,16 +5,16 @@ are running**: shell commands started with `run_in_background`, monitors and sub
 still working on something?"*
 
 ```
-⠹ Background  Deploy the API (+1)
+⠹ Background  Deploy the API ▸              one task: its own description
+⠹ Background Tasks (3) ▸                    several tasks: just their number
 ```
 
-It appears the moment a tool call moves work to the background, shows the first task's description plus a `(+N)`
-counter, animates while anything runs, and disappears by itself when nothing is left. It is re-checked **every time Claude hands control back to you**, so a prompt that looks idle never hides something that is still running or scheduled to wake the session later.
+It appears the moment a tool call moves work to the background, shows the task's description when there is one task, or just `Background Tasks (N)` when there are several, animates while anything runs, and disappears by itself when nothing is left. It is re-checked **every time Claude hands control back to you**, so a prompt that looks idle never hides something that is still running or scheduled to wake the session later.
 
-- Zero configuration, zero dependency, no network. It only reads the log files of your own background tasks.
+- Zero configuration, zero dependency, no network. It reads the log files of your own background tasks, and only when you press `↗` does it write one small task file in your temporary folder and start `code`.
 - Works with background Bash commands, `Monitor` tasks, background subagents and scheduled wake-ups (`ScheduleWakeup`, `/loop`).
 - Install in one line, free, MIT licensed.
-- Press a task to read its log; the band is localized in 18 languages and shows task descriptions in any script.
+- Press a task to read its log (with a scrollbar), or follow it in its own VS Code window; the band is localized in 18 languages and shows task descriptions in any script.
 
 ## Is there a Claude Code plugin to see background tasks?
 
@@ -70,29 +70,40 @@ it permanent for every session (including the ones an IDE extension starts) by a
 
 ## Unfold the list, read the logs
 
-The band shows the first task and a button with the number of tasks, `▸ 3`. Press it to see **every** background task
-(from 1 to N), one per row, with the kind the engine gives it. **Each row is a button**: press it to read the last lines
-of that task's log right under it, press it again to hide them.
+**The title.** With **one** task the band names it: `⠹ Background  Deploy the API ▸`. With **several** it only says
+`⠹ Background Tasks (3) ▸`, so the title never pretends that the first task is the only one. The `▸` button unfolds the list.
+
+Unfolded, you see **every** background task (from 1 to N), one per row, with the kind the engine gives it. **Each row is a
+button**: press it to read the last lines of that task's log right under it, press it again to hide them.
 
 ```
-⠹ Background  Deploy the API (+2) ▾
-  1. [shell] Deploy the API
-     │ building image…
-     │ pushing layer 3/7
-  2. [monitor] Watch the logs
-  3. [subagent] Review the diff
+⠹ Background Tasks (3) ▾
+  1. [shell] Deploy the API  ↗
+     ┃ pushing layer 3/7
+     ┃ pushing layer 4/7
+     │ pushing layer 5/7
+     │ pushing layer 6/7
+     21–30 / 187 ⤓
+  2. [monitor] Watch the logs  ↗
+  3. [subagent] Review the diff  ↗
 ```
 
-- **Nothing is read until you press a row.** Only the file of the row you opened is read (its last 32 KB, kept as its last 300 lines), never the other tasks'
-  logs, and folding the list closes the log and stops the reading. A task you never open costs nothing.
+- **A scrollbar on every open log.** The gutter to the left of the log lines is the scrollbar: the bright `┃` rows are the
+  thumb (where the window stands in the log, and how much of it you see), the dim `│` rows are the track. A log that fits
+  in the window has a track and no thumb.
 - **Scroll the log with the mouse wheel** (or the arrow, page, Home and End keys while the band is focused). The log shows
   10 lines at a time out of the last 300, with a position marker such as `26–35 / 40`. While you are scrolled up the view
   stays where you put it as new lines arrive; the `⤓` button, or scrolling back to the bottom, returns to the live end. The
-  wheel moves the open log wherever the pointer is on the band, and the rest of the band stays in place.
-- An open log is **live**: it refreshes about once a second while the task runs, so you can follow a build or a deployment as it prints.
+  wheel moves the open log wherever the pointer is on the band, and the rest of the band stays in place. One log is open at
+  a time: opening another closes the first.
+- **Nothing is read until you press a row.** Only the file of the row you opened is read (its last 32 KB, kept as its last
+  300 lines), never the other tasks' logs, and folding the list closes the log and stops the reading. A task you never open
+  costs nothing.
+- An open log is **live**: it refreshes about once a second while the task runs, so you can follow a build or a deployment as
+  it prints.
 - Colour codes and control characters are stripped, and each line is clipped by terminal columns.
 - Scheduled wake-ups are listed too, as `[wake-up]` (one-shot) or `[recurring]` (cron, `/loop`). They have no log, so
-  pressing one shows its schedule and its full prompt.
+  pressing one shows its schedule and its full prompt, and they have no `↗` button.
 - The unfolded list shows up to 10 rows, then `… +K` for the rest, so a long list never pushes your prompt off the screen.
 - Press `▾` to fold it back. It folds itself, too, once nothing is running any more.
 
@@ -101,6 +112,31 @@ mod reads it from there with the file API the engine offers plugins. That layout
 Code, not a documented interface. When no file is found the row says *No log available* (in your language) and shows
 the path it looked for; when the file exists but nothing was printed yet it says *Log is empty*. A task that prints
 nothing (for example a watcher that stays quiet until something happens) therefore has an empty log: that is not a bug.
+
+## Follow a log in its own VS Code window
+
+The `↗` button at the end of a task row opens a **new VS Code window** whose integrated terminal follows that task's log.
+It is meant for the long, noisy logs you want to keep an eye on while you carry on working.
+
+What it does, step by step, and nothing more:
+
+1. It looks up the task's log file (the same file the band reads).
+2. It writes **one file**, `bg-indicator/<task id>/.vscode/tasks.json`, in your temporary folder. It holds one VS Code task
+   that starts when the folder opens and runs a fixed command: `watch -n 1 -t tail -n 80 <log>` where `watch` is installed,
+   `tail -n 200 -f <log>` where it is not (macOS has no `watch` by default).
+3. It runs `code --new-window <that folder>`.
+
+Good to know:
+
+- **VS Code asks once per folder before running an automatic task** ("Allow automatic tasks?"). That prompt is VS Code's own
+  protection and the mod does not try to bypass it. If you trust the mod, set `"task.allowAutomaticTasks": "on"` in your
+  *user* settings to skip it. Without it, you can also run the task by hand from the terminal menu.
+- It needs the `code` command. The mod looks in the usual places (`/opt/homebrew/bin`, `/usr/local/bin`, the macOS
+  application bundle, `/usr/bin`, `/snap/bin`), then on your `PATH`. If it cannot start VS Code it says so (*VS Code not
+  found*, in your language) and writes nothing else. It is meant for macOS and Linux.
+- The command is fixed and its only inputs are checked: a task id may contain only letters, digits, `_` and `-`, and the log
+  path only letters, digits and `/._-`. Anything else is refused, never passed to a shell.
+- The throwaway folders live in your temporary folder and are cleaned by your system like any other temporary file.
 
 ## "From the bg-indicator plugin": why it is there and why it stays
 
@@ -140,7 +176,7 @@ setting, then the `LC_ALL`, `LC_MESSAGES` and `LANG` environment variables, and 
 ## How it works
 
 The mod is a single hooks module, [`hooks/register.tsx`](hooks/register.tsx), with no dependency and no network access.
-It reads files only to show a task's log, and writes none.
+It reads files to show a task's log, and writes a file only when you press `↗` (the VS Code task described above).
 
 | Event | What the mod does |
 | --- | --- |

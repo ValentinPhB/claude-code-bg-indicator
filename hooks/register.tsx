@@ -22,30 +22,30 @@ const LOG_WIDTH = 100
 const LOG_BYTES = 32768
 
 // ── Languages ────────────────────────────────────────────────────────────────
-// The only text the mod writes itself is two short phrases. Task descriptions come from the
+// The only text the mod writes itself is a few short phrases. Task descriptions come from the
 // session and are shown as they are, in any script. To add a language, add a line to
 // MESSAGES (key = lowercase language code) and one to ALIASES.
-export type Texts = { background: string; noLog: string; empty: string }
+export type Texts = { background: string; tasks: string; noLog: string; empty: string; noCode: string }
 
 const MESSAGES: Record<string, Texts> = {
-  en: { background: 'Background', noLog: 'No log available', empty: 'Log is empty' },
-  fr: { background: 'Arrière-plan', noLog: 'Aucun journal disponible', empty: 'Journal vide' },
-  es: { background: 'Segundo plano', noLog: 'Sin registro disponible', empty: 'Registro vacío' },
-  de: { background: 'Hintergrund', noLog: 'Kein Protokoll verfügbar', empty: 'Protokoll ist leer' },
-  pt: { background: 'Segundo plano', noLog: 'Nenhum registro disponível', empty: 'Registro vazio' },
-  it: { background: 'In background', noLog: 'Nessun log disponibile', empty: 'Log vuoto' },
-  nl: { background: 'Op de achtergrond', noLog: 'Geen log beschikbaar', empty: 'Log is leeg' },
-  pl: { background: 'W tle', noLog: 'Brak dziennika', empty: 'Dziennik jest pusty' },
-  sv: { background: 'Bakgrund', noLog: 'Ingen logg tillgänglig', empty: 'Loggen är tom' },
-  tr: { background: 'Arka plan', noLog: 'Günlük yok', empty: 'Günlük boş' },
-  ru: { background: 'Фон', noLog: 'Журнал недоступен', empty: 'Журнал пуст' },
-  uk: { background: 'Фон', noLog: 'Журнал недоступний', empty: 'Журнал порожній' },
-  ja: { background: 'バックグラウンド', noLog: 'ログはありません', empty: 'ログは空です' },
-  zh: { background: '后台', noLog: '没有可用日志', empty: '日志为空' },
-  'zh-tw': { background: '背景', noLog: '沒有可用的記錄', empty: '記錄是空的' },
-  ko: { background: '백그라운드', noLog: '사용 가능한 로그가 없습니다', empty: '로그가 비어 있습니다' },
-  vi: { background: 'Nền', noLog: 'Không có nhật ký', empty: 'Nhật ký trống' },
-  id: { background: 'Latar belakang', noLog: 'Log tidak tersedia', empty: 'Log kosong' },
+  en: { background: 'Background', tasks: 'Background Tasks', noLog: 'No log available', empty: 'Log is empty', noCode: 'VS Code not found' },
+  fr: { background: 'Arrière-plan', tasks: 'Tâches en arrière-plan', noLog: 'Aucun journal disponible', empty: 'Journal vide', noCode: 'VS Code introuvable' },
+  es: { background: 'Segundo plano', tasks: 'Tareas en segundo plano', noLog: 'Sin registro disponible', empty: 'Registro vacío', noCode: 'VS Code no encontrado' },
+  de: { background: 'Hintergrund', tasks: 'Hintergrundaufgaben', noLog: 'Kein Protokoll verfügbar', empty: 'Protokoll ist leer', noCode: 'VS Code nicht gefunden' },
+  pt: { background: 'Segundo plano', tasks: 'Tarefas em segundo plano', noLog: 'Nenhum registro disponível', empty: 'Registro vazio', noCode: 'VS Code não encontrado' },
+  it: { background: 'In background', tasks: 'Attività in background', noLog: 'Nessun log disponibile', empty: 'Log vuoto', noCode: 'VS Code non trovato' },
+  nl: { background: 'Op de achtergrond', tasks: 'Achtergrondtaken', noLog: 'Geen log beschikbaar', empty: 'Log is leeg', noCode: 'VS Code niet gevonden' },
+  pl: { background: 'W tle', tasks: 'Zadania w tle', noLog: 'Brak dziennika', empty: 'Dziennik jest pusty', noCode: 'Nie znaleziono VS Code' },
+  sv: { background: 'Bakgrund', tasks: 'Bakgrundsuppgifter', noLog: 'Ingen logg tillgänglig', empty: 'Loggen är tom', noCode: 'VS Code hittades inte' },
+  tr: { background: 'Arka plan', tasks: 'Arka plan görevleri', noLog: 'Günlük yok', empty: 'Günlük boş', noCode: 'VS Code bulunamadı' },
+  ru: { background: 'Фон', tasks: 'Фоновые задачи', noLog: 'Журнал недоступен', empty: 'Журнал пуст', noCode: 'VS Code не найден' },
+  uk: { background: 'Фон', tasks: 'Фонові завдання', noLog: 'Журнал недоступний', empty: 'Журнал порожній', noCode: 'VS Code не знайдено' },
+  ja: { background: 'バックグラウンド', tasks: 'バックグラウンドタスク', noLog: 'ログはありません', empty: 'ログは空です', noCode: 'VS Code が見つかりません' },
+  zh: { background: '后台', tasks: '后台任务', noLog: '没有可用日志', empty: '日志为空', noCode: '未找到 VS Code' },
+  'zh-tw': { background: '背景', tasks: '背景任務', noLog: '沒有可用的記錄', empty: '記錄是空的', noCode: '找不到 VS Code' },
+  ko: { background: '백그라운드', tasks: '백그라운드 작업', noLog: '사용 가능한 로그가 없습니다', empty: '로그가 비어 있습니다', noCode: 'VS Code를 찾을 수 없습니다' },
+  vi: { background: 'Nền', tasks: 'Tác vụ nền', noLog: 'Không có nhật ký', empty: 'Nhật ký trống', noCode: 'Không tìm thấy VS Code' },
+  id: { background: 'Latar belakang', tasks: 'Tugas latar belakang', noLog: 'Log tidak tersedia', empty: 'Log kosong', noCode: 'VS Code tidak ditemukan' },
 }
 
 // A code matches alone or followed by a separator (fr, fr_FR.UTF-8, fr-CA); a name matches as a prefix.
@@ -85,7 +85,13 @@ export const pickLanguage = (...candidates: (string | undefined)[]): string => {
   return 'en'
 }
 
-const FALLBACK: Texts = { background: 'Background', noLog: 'No log available', empty: 'Log is empty' }
+const FALLBACK: Texts = {
+  background: 'Background',
+  tasks: 'Background Tasks',
+  noLog: 'No log available',
+  empty: 'Log is empty',
+  noCode: 'VS Code not found',
+}
 
 export const textsFor = (language: string): Texts => MESSAGES[language] ?? MESSAGES['en'] ?? FALLBACK
 
@@ -185,14 +191,69 @@ export const visibleRange = (total: number, size: number, top: number | null) =>
   return { start, end: Math.min(total, start + size) }
 }
 
+/** Which rows of the scrollbar are the thumb (where the window stands in the log); the rest is the track. */
+export const scrollbar = (total: number, size: number, start: number, rows: number): boolean[] => {
+  if (total <= size || rows <= 0) return Array.from({ length: Math.max(0, rows) }, () => false)
+  const thumb = Math.min(rows, Math.max(1, Math.round((rows * size) / total)))
+  const last = total - size
+  const at = Math.round((Math.min(start, last) * (rows - thumb)) / last)
+
+  return Array.from({ length: rows }, (_, i) => i >= at && i < at + thumb)
+}
+
+// ── Open a task's log in its own VS Code window ─────────────────────────────
+// A throwaway folder holds one VS Code task that runs when the folder opens and follows the log with `watch`
+// (or `tail -f` where `watch` is not installed). Only a task id made of letters, digits, `_` and `-` and a
+// file path made of letters, digits and `/._-` ever reach the command, and the command is fixed.
+
+export const isSafeId = (id: string) => /^[A-Za-z0-9_-]{1,64}$/.test(id)
+
+export const isSafePath = (path: string) => /^\/[A-Za-z0-9/._-]{1,400}$/.test(path) && !path.includes('..')
+
+const quote = (text: string) => `'${text.replace(/'/g, `'\\''`)}'`
+
+/** What the VS Code terminal runs to follow a log file. */
+export const followCommand = (file: string) =>
+  `if command -v watch >/dev/null 2>&1; then exec watch -n 1 -t tail -n 80 ${quote(file)}; else exec tail -n 200 -f ${quote(file)}; fi`
+
+/** The `.vscode/tasks.json` of the throwaway folder: one terminal task that starts as the folder opens. */
+export const tasksJson = (title: string, command: string) =>
+  JSON.stringify(
+    {
+      version: '2.0.0',
+      tasks: [
+        {
+          label: `bg-indicator: ${title}`,
+          type: 'shell',
+          command,
+          isBackground: true,
+          problemMatcher: [],
+          presentation: { reveal: 'always', panel: 'dedicated', focus: false, clear: true, showReuseMessage: false },
+          runOptions: { runOn: 'folderOpen' },
+        },
+      ],
+    },
+    null,
+    2,
+  )
+
+/** Where the `code` command usually is; the bare name is tried last, for a `PATH` that has it. */
+const CODE_CLIS = [
+  '/opt/homebrew/bin/code',
+  '/usr/local/bin/code',
+  '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code',
+  '/usr/bin/code',
+  '/snap/bin/code',
+] as const
+
 /** The only task whose log is read on a tick: the one the user opened, and only while the list is unfolded. */
 export const refreshTarget = (isOpen: boolean, viewingId: string | null, list: readonly Task[]) =>
   isOpen && viewingId !== null ? list.find(t => t.id === viewingId) : undefined
 
 const ROOTS = ['/private/tmp', '/tmp'] as const
 
-/** The last lines of a task's output file; `lines` is undefined when no file is found, `tried` is the first path looked for. */
-const readTail = async ($: EngineInterface, places: Where[], id: string): Promise<{ lines?: string[]; tried: string | null }> => {
+/** The output file of a task, or undefined; `tried` is the first path looked for. */
+const findOutput = async ($: EngineInterface, places: Where[], id: string): Promise<{ file?: string; tried: string | null }> => {
   let tried: string | null = null
   for (const place of places) {
     for (const root of ROOTS) {
@@ -201,19 +262,24 @@ const readTail = async ($: EngineInterface, places: Where[], id: string): Promis
         if (entry.kind !== 'dir' || !entry.name.startsWith('claude-')) continue
         const path = outputPath(root, entry.name, place, id)
         tried ??= path
-        if (!(await $.fs.exists(path).catch(() => false))) continue
-        const size = (await $.fs.stat(path).catch(() => undefined))?.size ?? 0
-        const offset = Math.max(0, size - LOG_BYTES)
-        const text = await $.fs.read(path, { offset, length: LOG_BYTES }).catch(() => undefined)
-        if (text === undefined) return { tried }
-        // A read that starts mid-file begins in the middle of a line: drop that partial line.
-        const whole = offset > 0 ? text.slice(text.indexOf('\n') + 1) : text
-        return { lines: tailLines(whole, LOG_KEEP, LOG_WIDTH), tried }
+        if (await $.fs.exists(path).catch(() => false)) return { file: path, tried }
       }
     }
   }
 
   return { tried }
+}
+
+/** The last lines of an output file, or undefined when it cannot be read. */
+const readTail = async ($: EngineInterface, file: string): Promise<string[] | undefined> => {
+  const size = (await $.fs.stat(file).catch(() => undefined))?.size ?? 0
+  const offset = Math.max(0, size - LOG_BYTES)
+  const text = await $.fs.read(file, { offset, length: LOG_BYTES }).catch(() => undefined)
+  if (text === undefined) return undefined
+  // A read that starts mid-file begins in the middle of a line: drop that partial line.
+  const whole = offset > 0 ? text.slice(text.indexOf('\n') + 1) : text
+
+  return tailLines(whole, LOG_KEEP, LOG_WIDTH)
 }
 
 /** The session as the engine knows it now: its id and its working directory (the folder name may follow either). */
@@ -228,10 +294,36 @@ const logOf = async ($: EngineInterface, task: Task): Promise<LogView> => {
   if (task.detail !== undefined) {
     return { id: task.id, lines: tailLines(task.detail, LOG_KEEP, LOG_WIDTH), note: null, tried: null }
   }
-  const { lines, tried } = await readTail($, await placesOf($), task.id)
+  const { file, tried } = await findOutput($, await placesOf($), task.id)
+  const lines = file === undefined ? undefined : await readTail($, file)
   if (lines === undefined) return { id: task.id, lines: [], note: 'none', tried }
 
   return { id: task.id, lines, note: lines.length === 0 ? 'empty' : null, tried }
+}
+
+/** Opens a new VS Code window whose terminal follows the task's log. */
+const openWindow = async ($: EngineInterface, task: Task, texts: Texts) => {
+  if (!isSafeId(task.id) || task.detail !== undefined) {
+    await $.ui.toast(texts.noLog)
+    return
+  }
+  const { file } = await findOutput($, await placesOf($), task.id)
+  if (file === undefined || !isSafePath(file)) {
+    await $.ui.toast(texts.noLog)
+    return
+  }
+  const root = (await $.fs.exists(ROOTS[0]).catch(() => false)) ? ROOTS[0] : ROOTS[1]
+  const dir = `${root}/bg-indicator/${task.id}`
+  await $.fs.write(`${dir}/.vscode/tasks.json`, tasksJson(task.label, followCommand(file)))
+  let code: string = 'code'
+  for (const candidate of CODE_CLIS) {
+    if (await $.fs.exists(candidate).catch(() => false)) {
+      code = candidate
+      break
+    }
+  }
+  const result = await $.process.run([code, '--new-window', dir], { timeoutMs: 20000 }).catch(() => undefined)
+  if (result === undefined || result.exitCode !== 0) await $.ui.toast(texts.noCode)
 }
 
 export const register: Register = on => {
@@ -331,7 +423,7 @@ export const register: Register = on => {
     const view = await read($, log)
     const top = await read($, logTop)
     const { Box, Button, Text } = $.ui.resolve(e)
-    const more = list.length > 1 ? ` (+${list.length - 1})` : ''
+    const single = list.length === 1
     const shown = list.slice(0, MAX_ROWS)
     const hidden = list.length - shown.length
 
@@ -345,15 +437,15 @@ export const register: Register = on => {
       await update($, expanded, () => !wasOpen)
     }
 
+    // One task: its own description. Several: just their number, the list is one press away.
     const header = (
       <Box>
         <Text color="yellow">{FRAMES[f] ?? FRAMES[0]} </Text>
-        <Text bold color="yellow">
-          {texts.background}{' '}
-        </Text>
-        <Text>{first.label}</Text>
-        <Text dimColor>{more} </Text>
-        <Button key="toggle" label={isOpen ? '▾' : `▸ ${list.length}`} onPress={() => flip(isOpen)} />
+        {single
+          ? <Text bold color="yellow">{texts.background}{' '}</Text>
+          : <Text bold color="yellow">{texts.tasks}{' '}</Text>}
+        {single ? <Text>{first.label}{' '}</Text> : <Text>{`(${list.length})`}{' '}</Text>}
+        <Button key="toggle" label={isOpen ? '▾' : '▸'} onPress={() => flip(isOpen)} />
       </Box>
     )
 
@@ -380,16 +472,25 @@ export const register: Register = on => {
         {shown.map((t, i) => {
           const log_ = openId === t.id && view !== null && view.id === t.id ? view : null
           const range = log_ === null ? null : visibleRange(log_.lines.length, LOG_WINDOW, top)
+          const thumb = log_ === null || range === null ? [] : scrollbar(log_.lines.length, LOG_WINDOW, range.start, range.end - range.start)
 
           return (
             <Box key={`row-${t.id}`} flexDirection="column">
-              <Button key={`task-${t.id}`} label={`${i + 1}. [${kindOf(t)}] ${t.label}`} onPress={() => press(t)} />
+              <Box>
+                <Button key={`task-${t.id}`} label={`${i + 1}. [${kindOf(t)}] ${t.label}`} onPress={() => press(t)} />
+                {t.detail === undefined ? <Text> </Text> : null}
+                {t.detail === undefined ? <Button key={`open-${t.id}`} label="↗" onPress={() => openWindow($, t, texts)} /> : null}
+              </Box>
               {log_ !== null && range !== null ? (
                 <Box flexDirection="column">
                   {log_.note === null
-                    ? log_.lines
-                        .slice(range.start, range.end)
-                        .map((line, n) => <Text key={`log-${t.id}-${n}`} dimColor>{`     │ ${line}`}</Text>)
+                    ? log_.lines.slice(range.start, range.end).map((line, n) => (
+                        <Box key={`log-${t.id}-${n}`}>
+                          <Text dimColor>{'     '}</Text>
+                          {thumb[n] === true ? <Text color="cyan">┃</Text> : <Text dimColor>│</Text>}
+                          <Text dimColor>{` ${line}`}</Text>
+                        </Box>
+                      ))
                     : <Text dimColor>{`     ${log_.note === 'empty' ? texts.empty : texts.noLog}`}</Text>}
                   {log_.note === null && log_.lines.length > LOG_WINDOW ? (
                     <Box>
