@@ -5,9 +5,12 @@ import type { Task } from '../types'
 
 const tasks = atom({ plugin: 'bg-indicator', key: 'tasks' } as const, [] as Task[])
 const frame = atom({ plugin: 'bg-indicator', key: 'frame' } as const, 0)
+const expanded = atom({ plugin: 'bg-indicator', key: 'expanded' } as const, false)
 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 const MAX_WIDTH = 60
+/** Rows of the unfolded list; the rest is summarised so a long list never pushes the prompt off the screen. */
+const MAX_ROWS = 10
 
 // ── Languages ────────────────────────────────────────────────────────────────
 // The only text the mod writes itself is one word. Task descriptions come from the
@@ -71,7 +74,7 @@ export const pickLanguage = (...candidates: (string | undefined)[]): string => {
   return 'en'
 }
 
-export const wordFor = (language: string) => MESSAGES[language] ?? MESSAGES.en ?? 'Background'
+export const wordFor = (language: string) => MESSAGES[language] ?? MESSAGES['en'] ?? 'Background'
 
 // ── Text width ───────────────────────────────────────────────────────────────
 // CJK characters and emoji take two terminal columns; clipping by columns, and by whole characters
@@ -103,6 +106,10 @@ export const clip = (text: string, max: number) => {
 }
 
 type Describable = { description?: string; command?: string; type?: string }
+
+/** What the engine calls the task (`shell`, `subagent`, `monitor`, `workflow`), or a guess from the tool that started it. */
+export const kindOfTool = (tool: string) =>
+  tool === 'Monitor' ? 'monitor' : tool === 'Agent' || tool === 'Task' ? 'subagent' : 'shell'
 
 export const labelOf = (item: Describable) =>
   clip((item.description || item.command || item.type || 'task').replace(/\s+/g, ' ').trim(), MAX_WIDTH)
@@ -144,7 +151,9 @@ export const register: Register = on => {
     const input = e.tool_input as (Describable & { run_in_background?: boolean }) | null
     if (input && (input.run_in_background === true || e.tool_name === 'Monitor')) {
       await update($, tasks, list =>
-        list.some(t => t.id === e.tool_use_id) ? list : [...list, { id: e.tool_use_id, label: labelOf(input) }],
+        list.some(t => t.id === e.tool_use_id)
+          ? list
+          : [...list, { id: e.tool_use_id, label: labelOf(input), kind: kindOfTool(e.tool_name) }],
       )
     }
 
@@ -156,9 +165,15 @@ export const register: Register = on => {
   // Either one means "something is still going on", even though the prompt looks idle.
   on('classic.Stop', async ($, e, next) => {
     if (Array.isArray(e.background_tasks) || Array.isArray(e.session_crons)) {
-      const running = (e.background_tasks ?? []).map(t => ({ id: t.id, label: labelOf(t) }))
-      const scheduled = (e.session_crons ?? []).map(c => ({ id: c.id, label: scheduledLabel(c.prompt) }))
-      await update($, tasks, () => [...running, ...scheduled])
+      const running = (e.background_tasks ?? []).map(t => ({ id: t.id, label: labelOf(t), kind: t.type || 'task' }))
+      const scheduled = (e.session_crons ?? []).map(c => ({
+        id: c.id,
+        label: scheduledLabel(c.prompt),
+        kind: c.recurring ? 'recurring' : 'wake-up',
+      }))
+      const all = [...running, ...scheduled]
+      await update($, tasks, () => all)
+      if (all.length === 0) await update($, expanded, () => false)
     }
 
     return next(e)
@@ -172,17 +187,38 @@ export const register: Register = on => {
     }
 
     const f = await read($, frame)
-    const { Box, Text } = $.ui.resolve(e)
+    const isOpen = await read($, expanded)
+    const { Box, Button, Text } = $.ui.resolve(e)
     const more = list.length > 1 ? ` (+${list.length - 1})` : ''
+    const shown = list.slice(0, MAX_ROWS)
+    const hidden = list.length - shown.length
 
-    return (
+    const header = (
       <Box>
         <Text color="yellow">{FRAMES[f] ?? FRAMES[0]} </Text>
         <Text bold color="yellow">
           {word}{' '}
         </Text>
         <Text>{first.label}</Text>
-        <Text dimColor>{more}</Text>
+        <Text dimColor>{more} </Text>
+        <Button key="toggle" label={isOpen ? '▾' : `▸ ${list.length}`} onPress={() => update($, expanded, v => !v)} />
+      </Box>
+    )
+
+    if (!isOpen) {
+      return header
+    }
+
+    return (
+      <Box flexDirection="column">
+        {header}
+        {shown.map((t, i) => (
+          <Box key={t.id}>
+            <Text dimColor>{`  ${i + 1}. [${t.kind}] `}</Text>
+            <Text>{t.label}</Text>
+          </Box>
+        ))}
+        {hidden > 0 ? <Text dimColor>{`  … +${hidden}`}</Text> : null}
       </Box>
     )
   })

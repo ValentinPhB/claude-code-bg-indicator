@@ -1,0 +1,16 @@
+{
+  "name": "bg-indicator",
+  "version": "0.5.0",
+  "private": true,
+  "description": "Development tooling for the bg-indicator Claude Code plugin (the plugin itself needs no build step).",
+  "license": "MIT",
+  "scripts": {
+    "typecheck": "tsc -p .",
+    "test": "claude plugin test .",
+    "validate": "claude plugin validate .",
+    "check": "npm run typecheck && npm run validate && npm test"
+  },
+  "devDependencies": {
+    "typescript": "5.6.3"
+  }
+}

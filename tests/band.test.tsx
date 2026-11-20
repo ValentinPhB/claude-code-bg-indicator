@@ -1,6 +1,7 @@
 import { expect, test } from 'claude-code/testing'
+import type { Engine } from 'claude-code/testing'
 
-import { clip, pickLanguage, scheduledLabel, wordFor } from '../hooks/register'
+import { clip, kindOfTool, pickLanguage, scheduledLabel, wordFor } from '../hooks/register'
 
 const BAND = {
   plugin: 'bg-indicator',
@@ -17,7 +18,7 @@ const BAND = {
 } as const
 
 test('the band is hidden while nothing runs in the background', async ($, on) => {
-  on('classic.Stop', (_, e) => ({}))
+  on('classic.Stop', () => ({}))
   await $.classic.Stop({ stop_hook_active: false, background_tasks: [] })
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
@@ -37,7 +38,7 @@ test('a task listed at the end of a turn shows its description, then clears', as
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: /Deploy the API/ }))?.text).toBe('Deploy the API')
-  expect((await ui.find({ type: 'Text', text: /\+1/ }))?.text).toBe(' (+1)')
+  expect((await ui.find({ type: 'Text', text: /\+1/ }))?.text).toBe(' (+1) ')
   await ui.unmount()
 
   await $.classic.Stop({ stop_hook_active: false, background_tasks: [] })
@@ -138,4 +139,124 @@ test('a wake-up scheduled for later keeps the band lit when control returns', as
 test('a scheduled label is clipped by columns and never empty', () => {
   expect(scheduledLabel('')).toBe('⏰ scheduled')
   expect(Array.from(scheduledLabel('x'.repeat(200))).length).toBeLessThanOrEqual(60)
+})
+
+const TOGGLE = { plugin: 'bg-indicator', key: 'toggle', surface: 'terminal' } as const
+
+/** A press needs the drawing that holds the button: mount it, press, and let go (the state stays). */
+const toggle = async ($: Engine) => {
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press(TOGGLE)
+  await ui.unmount()
+}
+
+const stopWith = async (
+  $: Engine,
+  descriptions: { type: string; text: string }[],
+) =>
+  $.classic.Stop({
+    stop_hook_active: false,
+    background_tasks: descriptions.map((d, i) => ({
+      id: `id${i}`,
+      type: d.type,
+      status: 'running',
+      description: d.text,
+    })),
+  })
+
+test('the band is folded by default and its button shows how many tasks run', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  await stopWith($, [
+    { type: 'shell', text: 'Deploy the API' },
+    { type: 'monitor', text: 'Watch the logs' },
+  ])
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await ui.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▸ 2')
+  expect(await ui.find({ type: 'Text', text: /Watch the logs/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('pressing the button unfolds the whole list, with the kind of each task, and folds it back', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  await stopWith($, [
+    { type: 'shell', text: 'Deploy the API' },
+    { type: 'monitor', text: 'Watch the logs' },
+    { type: 'subagent', text: 'Review the diff' },
+  ])
+
+  await toggle($)
+  const open = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await open.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▾')
+  expect((await open.find({ type: 'Text', text: /1\. \[shell\]/ }))?.text).toBe('  1. [shell] ')
+  expect((await open.find({ type: 'Text', text: /2\. \[monitor\]/ }))?.text).toBe('  2. [monitor] ')
+  expect((await open.find({ type: 'Text', text: /3\. \[subagent\]/ }))?.text).toBe('  3. [subagent] ')
+  expect((await open.find({ type: 'Text', text: /Review the diff/ }))?.text).toBe('Review the diff')
+  await open.unmount()
+
+  await toggle($)
+  const folded = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await folded.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▸ 3')
+  expect(await folded.find({ type: 'Text', text: /Review the diff/ })).toBeUndefined()
+  await folded.unmount()
+})
+
+test('a single task can be unfolded too', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  await stopWith($, [{ type: 'shell', text: 'Only one' }])
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /1\. \[shell\]/ }))?.text).toBe('  1. [shell] ')
+  await ui.unmount()
+})
+
+test('a long list is capped and the rest is summarised', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  await stopWith(
+    $,
+    Array.from({ length: 14 }, (_, i) => ({ type: 'shell', text: `Job ${i + 1}` })),
+  )
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.findAll({ type: 'Text', text: /\[shell\]/ })).toHaveLength(10)
+  expect((await ui.find({ type: 'Text', text: /… \+4/ }))?.text).toBe('  … +4')
+  await ui.unmount()
+})
+
+test('the list folds itself when nothing runs any more', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  await stopWith($, [{ type: 'shell', text: 'Job' }])
+  await toggle($)
+  await $.classic.Stop({ stop_hook_active: false, background_tasks: [], session_crons: [] })
+  await stopWith($, [{ type: 'shell', text: 'Another job' }])
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await ui.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▸ 1')
+  await ui.unmount()
+})
+
+test('a scheduled wake-up is listed with its own kind', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  await $.classic.Stop({
+    stop_hook_active: false,
+    background_tasks: [],
+    session_crons: [
+      { id: 'w', schedule: '0 9 * * *', recurring: false, prompt: 'Resume the migration' },
+      { id: 'r', schedule: '*/5 * * * *', recurring: true, prompt: 'Poll the queue' },
+    ],
+  })
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /\[wake-up\]/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /\[recurring\]/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('the kind of a task started by a tool call follows the tool', () => {
+  expect(kindOfTool('Monitor')).toBe('monitor')
+  expect(kindOfTool('Agent')).toBe('subagent')
+  expect(kindOfTool('Bash')).toBe('shell')
 })
