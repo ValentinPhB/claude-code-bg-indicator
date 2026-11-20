@@ -18,7 +18,7 @@ counter, animates while anything runs, and disappears by itself when nothing is 
 
 ## Is there a Claude Code plugin to see background tasks?
 
-Yes, this one. If you searched for any of the following, you are in the right place:
+Yes, this one. It shows every task Claude Code itself tracks as a background task. If you searched for any of the following, you are in the right place:
 
 - *Is there a plugin or mod to see Claude Code background tasks?*
 - *How can I tell if Claude Code is still running something in the background?*
@@ -111,6 +111,9 @@ characters.
   next end of turn rather than at once.
 - Developed and used in the VS Code extension. The band is a standard `AbovePrompt` row, so it should draw on the other
   surfaces too, but they have not been checked.
+- **Detached processes are invisible.** A process started with `nohup cmd &`, `disown`, `setsid`, a `( cmd & )` subshell
+  or a daemon is no longer a Claude Code task, so the engine never reports it and no mod can show it. Start long
+  commands with `run_in_background` (or ask Claude to) and they appear in the band.
 - It shows what the engine reports. It does not start, stop or inspect tasks.
 
 ## Develop and test
