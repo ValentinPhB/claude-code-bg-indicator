@@ -172,7 +172,7 @@ setting, then the `LC_ALL`, `LC_MESSAGES` and `LANG` environment variables, and 
 
 - Task descriptions come from your session and are shown as they are, in any script (Latin, Cyrillic, CJK, emoji...).
 - Long descriptions are clipped by **terminal columns**, not by characters: CJK characters and emoji take two columns,
-  and an emoji is never cut in half. A clipped title is **never lost**: hover its row to read it in full.
+  and an emoji is never cut in half. A clipped title is **never lost**: hover its row, or unfold it with `▾`, to read it in full.
 - **Add your language**: add one line to `MESSAGES` and one to `ALIASES` in [`hooks/register.tsx`](hooks/register.tsx),
   then open a pull request. A native speaker's wording is always better than a translation tool's.
 

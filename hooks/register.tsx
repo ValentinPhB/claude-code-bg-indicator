@@ -497,6 +497,10 @@ export const register: Register = on => {
                   </Button>
                 ) : null}
               </Box>
+              {openId === t.id && clip(t.label, labelWidth) !== t.label ? (
+                // Always readable, whatever the pointer does: the unfolded row carries the full title.
+                <Text dimColor size="caption">{`   ${t.label}`}</Text>
+              ) : null}
               {log_ !== null && range !== null ? (
                 <Box flexDirection="column">
                   {log_.note === null

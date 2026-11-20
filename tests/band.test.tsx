@@ -864,3 +864,17 @@ test('a title cut to fit the band is shown in full, hidden until the pointer is 
   expect(await ui.find({ type: 'Text', text: /^Short$/ })).toBeUndefined()
   await ui.unmount()
 })
+
+test('unfolding a row whose title is cut shows the full title, whatever the pointer does', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  session(on)
+  logFiles(on, 'line 1\n', 14)
+  const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet'
+  await stopWith($, [{ type: 'shell', text: long }])
+  await toggle($)
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
+  const titles = await ui.findAll({ type: 'Text', text: /relancer le test complet\s*$/ })
+  expect(titles.some(x => x.text.trim() === long)).toBe(true)
+  await ui.unmount()
+})
