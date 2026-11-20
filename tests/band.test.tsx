@@ -1,5 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
+import type { On } from 'claude-code'
 
 import {
   clip,
@@ -301,8 +302,15 @@ const dir = (name: string) => ({ name, kind: 'dir' as const, size: 0, mtimeMs: 0
 
 const LOG_FILE = '/private/tmp/claude-1000/-work-app/sess1/tasks/id0.output'
 
+const session = (on: On) => {
+  on('session.id', () => ({ value: 'sess1' }))
+  on('session.cwd', () => ({ value: '/work/app' }))
+  on('session.root', () => ({ value: '/work/app' }))
+}
+
 test('pressing a row shows the last lines of its log, and pressing it again hides them', async ($, on) => {
   on('classic.Stop', () => ({}))
+  session(on)
   on('fs.list', () => ({ value: [dir('claude-1000'), dir('other')] }))
   on('fs.exists', (_, e) => ({ value: e.path === LOG_FILE }))
   on('fs.stat', () => ({ value: { kind: 'file' as const, size: 40, mtimeMs: 0, isLink: false } }))
@@ -328,6 +336,7 @@ test('pressing a row shows the last lines of its log, and pressing it again hide
 
 test('a task without a log file says so, in the language of the user', async ($, on) => {
   on('classic.Stop', () => ({}))
+  session(on)
   on('fs.list', () => ({ value: [] }))
   on('settings.read', () => ({ value: { language: 'French' } }))
   on('env.get', () => ({ value: undefined }))
@@ -371,4 +380,34 @@ test('a task kept by an older version without a kind is shown as a plain task, n
   expect(kindOf({})).toBe('task')
   expect(kindOf({ kind: '' })).toBe('task')
   expect(kindOf({ kind: 'monitor' })).toBe('monitor')
+})
+
+test('a missing file shows where it was looked for; an empty file says it is empty', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  session(on)
+  on('fs.list', () => ({ value: [dir('claude-1000')] }))
+  on('fs.exists', (_, e) => ({ value: e.path.endsWith('/empty.output') }))
+  on('fs.stat', () => ({ value: { kind: 'file' as const, size: 0, mtimeMs: 0, isLink: false } }))
+  on('fs.read', () => ({ value: '' }))
+
+  await $.classic.Stop({
+    session_id: 'sess1',
+    cwd: '/work/app',
+    stop_hook_active: false,
+    background_tasks: [
+      { id: 'gone', type: 'shell', status: 'running', description: 'Vanished' },
+      { id: 'empty', type: 'shell', status: 'running', description: 'Silent' },
+    ],
+  })
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-gone', surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /→/ }))?.text).toBe(
+    '     → /private/tmp/claude-1000/-work-app/sess1/tasks/gone.output',
+  )
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-empty', surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /Log is empty/ }))?.text).toBe('     Log is empty')
+  expect(await ui.find({ type: 'Text', text: /→/ })).toBeUndefined()
+  await ui.unmount()
 })

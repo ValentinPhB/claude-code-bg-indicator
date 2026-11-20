@@ -83,7 +83,7 @@ of that task's log right under it, press it again to hide them.
   3. [subagent] Review the diff
 ```
 
-- An open log refreshes about once a second while the task runs.
+- An open log is **live**: it refreshes about once a second while the task runs, so you can follow a build or a deployment as it prints.
 - Colour codes and control characters are stripped, and each line is clipped by terminal columns.
 - Scheduled wake-ups are listed too, as `[wake-up]` (one-shot) or `[recurring]` (cron, `/loop`). They have no log, so
   pressing one shows its schedule and its full prompt.
@@ -92,11 +92,24 @@ of that task's log right under it, press it again to hide them.
 
 **About the logs.** Claude Code keeps each background task's output in a file of its session's temporary folder, and the
 mod reads it from there with the file API the engine offers plugins. That layout is an implementation detail of Claude
-Code, not a documented interface: if a file cannot be found, the row says so (*No log available*, in your language)
-instead of failing.
+Code, not a documented interface. When no file is found the row says *No log available* (in your language) and shows
+the path it looked for; when the file exists but nothing was printed yet it says *Log is empty*. A task that prints
+nothing (for example a watcher that stays quiet until something happens) therefore has an empty log: that is not a bug.
 
-**About the "From the bg-indicator plugin" line.** Claude Code adds it itself above anything a plugin draws, so you
-always know where a piece of interface comes from. A plugin cannot remove or change it.
+## "From the bg-indicator plugin": why it is there and why it stays
+
+**English.** The small line *From the bg-indicator plugin* above the band is drawn by **Claude Code itself**, not by this
+mod. Claude Code labels everything a plugin draws so you always know where a piece of interface comes from. A plugin has no
+option to hide, move or reword it, and this mod will not try to work around it, because the label is a safety feature of the
+host. **Please do not open an issue or a pull request asking to remove it:** it would be declined. If you want the label
+changed, ask the Claude Code team.
+
+**Français.** La petite ligne *From the bg-indicator plugin* au-dessus du bandeau est affichée par **Claude Code
+lui-même**, pas par ce mod. Claude Code signale tout ce qu'un plugin dessine, pour que vous sachiez toujours d'où vient un
+élément de l'interface. Un plugin n'a aucune option pour la masquer, la déplacer ou la reformuler, et ce mod n'essaiera pas
+de la contourner, car cette mention est une protection de l'application hôte. **Merci de ne pas ouvrir de ticket ni de
+pull request pour demander sa suppression :** elle serait refusée. Pour la faire modifier, il faut s'adresser à l'équipe de
+Claude Code.
 
 ## Languages
 

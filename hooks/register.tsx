@@ -6,7 +6,6 @@ import type { LogView, Task, Where } from '../types'
 const tasks = atom({ plugin: 'bg-indicator', key: 'tasks' } as const, [] as Task[])
 const frame = atom({ plugin: 'bg-indicator', key: 'frame' } as const, 0)
 const expanded = atom({ plugin: 'bg-indicator', key: 'expanded' } as const, false)
-const where = atom({ plugin: 'bg-indicator', key: 'where' } as const, null as Where | null)
 const viewing = atom({ plugin: 'bg-indicator', key: 'viewing' } as const, null as string | null)
 const log = atom({ plugin: 'bg-indicator', key: 'log' } as const, null as LogView | null)
 
@@ -23,27 +22,27 @@ const LOG_BYTES = 4096
 // The only text the mod writes itself is two short phrases. Task descriptions come from the
 // session and are shown as they are, in any script. To add a language, add a line to
 // MESSAGES (key = lowercase language code) and one to ALIASES.
-export type Texts = { background: string; noLog: string }
+export type Texts = { background: string; noLog: string; empty: string }
 
 const MESSAGES: Record<string, Texts> = {
-  en: { background: 'Background', noLog: 'No log available' },
-  fr: { background: 'Arrière-plan', noLog: 'Aucun journal disponible' },
-  es: { background: 'Segundo plano', noLog: 'Sin registro disponible' },
-  de: { background: 'Hintergrund', noLog: 'Kein Protokoll verfügbar' },
-  pt: { background: 'Segundo plano', noLog: 'Nenhum registro disponível' },
-  it: { background: 'In background', noLog: 'Nessun log disponibile' },
-  nl: { background: 'Op de achtergrond', noLog: 'Geen log beschikbaar' },
-  pl: { background: 'W tle', noLog: 'Brak dziennika' },
-  sv: { background: 'Bakgrund', noLog: 'Ingen logg tillgänglig' },
-  tr: { background: 'Arka plan', noLog: 'Günlük yok' },
-  ru: { background: 'Фон', noLog: 'Журнал недоступен' },
-  uk: { background: 'Фон', noLog: 'Журнал недоступний' },
-  ja: { background: 'バックグラウンド', noLog: 'ログはありません' },
-  zh: { background: '后台', noLog: '没有可用日志' },
-  'zh-tw': { background: '背景', noLog: '沒有可用的記錄' },
-  ko: { background: '백그라운드', noLog: '사용 가능한 로그가 없습니다' },
-  vi: { background: 'Nền', noLog: 'Không có nhật ký' },
-  id: { background: 'Latar belakang', noLog: 'Log tidak tersedia' },
+  en: { background: 'Background', noLog: 'No log available', empty: 'Log is empty' },
+  fr: { background: 'Arrière-plan', noLog: 'Aucun journal disponible', empty: 'Journal vide' },
+  es: { background: 'Segundo plano', noLog: 'Sin registro disponible', empty: 'Registro vacío' },
+  de: { background: 'Hintergrund', noLog: 'Kein Protokoll verfügbar', empty: 'Protokoll ist leer' },
+  pt: { background: 'Segundo plano', noLog: 'Nenhum registro disponível', empty: 'Registro vazio' },
+  it: { background: 'In background', noLog: 'Nessun log disponibile', empty: 'Log vuoto' },
+  nl: { background: 'Op de achtergrond', noLog: 'Geen log beschikbaar', empty: 'Log is leeg' },
+  pl: { background: 'W tle', noLog: 'Brak dziennika', empty: 'Dziennik jest pusty' },
+  sv: { background: 'Bakgrund', noLog: 'Ingen logg tillgänglig', empty: 'Loggen är tom' },
+  tr: { background: 'Arka plan', noLog: 'Günlük yok', empty: 'Günlük boş' },
+  ru: { background: 'Фон', noLog: 'Журнал недоступен', empty: 'Журнал пуст' },
+  uk: { background: 'Фон', noLog: 'Журнал недоступний', empty: 'Журнал порожній' },
+  ja: { background: 'バックグラウンド', noLog: 'ログはありません', empty: 'ログは空です' },
+  zh: { background: '后台', noLog: '没有可用日志', empty: '日志为空' },
+  'zh-tw': { background: '背景', noLog: '沒有可用的記錄', empty: '記錄是空的' },
+  ko: { background: '백그라운드', noLog: '사용 가능한 로그가 없습니다', empty: '로그가 비어 있습니다' },
+  vi: { background: 'Nền', noLog: 'Không có nhật ký', empty: 'Nhật ký trống' },
+  id: { background: 'Latar belakang', noLog: 'Log tidak tersedia', empty: 'Log kosong' },
 }
 
 // A code matches alone or followed by a separator (fr, fr_FR.UTF-8, fr-CA); a name matches as a prefix.
@@ -83,7 +82,7 @@ export const pickLanguage = (...candidates: (string | undefined)[]): string => {
   return 'en'
 }
 
-const FALLBACK: Texts = { background: 'Background', noLog: 'No log available' }
+const FALLBACK: Texts = { background: 'Background', noLog: 'No log available', empty: 'Log is empty' }
 
 export const textsFor = (language: string): Texts => MESSAGES[language] ?? MESSAGES['en'] ?? FALLBACK
 
@@ -166,34 +165,47 @@ export const tailLines = (text: string, maxLines: number, maxWidth: number): str
 
 const ROOTS = ['/private/tmp', '/tmp'] as const
 
-/** The last lines of a task's output file, or undefined when no such file is found. */
-const readTail = async ($: EngineInterface, w: Where, id: string): Promise<string[] | undefined> => {
-  for (const root of ROOTS) {
-    const entries = await $.fs.list(root).catch(() => [])
-    for (const entry of entries) {
-      if (entry.kind !== 'dir' || !entry.name.startsWith('claude-')) continue
-      const path = outputPath(root, entry.name, w, id)
-      if (!(await $.fs.exists(path).catch(() => false))) continue
-      const size = (await $.fs.stat(path).catch(() => undefined))?.size ?? 0
-      const offset = Math.max(0, size - LOG_BYTES)
-      const text = await $.fs.read(path, { offset, length: LOG_BYTES }).catch(() => undefined)
-      if (text === undefined) return undefined
-      // A read that starts mid-file begins in the middle of a line: drop that partial line.
-      const whole = offset > 0 ? text.slice(text.indexOf('\n') + 1) : text
-      return tailLines(whole, LOG_LINES, LOG_WIDTH)
+/** The last lines of a task's output file; `lines` is undefined when no file is found, `tried` is the first path looked for. */
+const readTail = async ($: EngineInterface, places: Where[], id: string): Promise<{ lines?: string[]; tried: string | null }> => {
+  let tried: string | null = null
+  for (const place of places) {
+    for (const root of ROOTS) {
+      const entries = await $.fs.list(root).catch(() => [])
+      for (const entry of entries) {
+        if (entry.kind !== 'dir' || !entry.name.startsWith('claude-')) continue
+        const path = outputPath(root, entry.name, place, id)
+        tried ??= path
+        if (!(await $.fs.exists(path).catch(() => false))) continue
+        const size = (await $.fs.stat(path).catch(() => undefined))?.size ?? 0
+        const offset = Math.max(0, size - LOG_BYTES)
+        const text = await $.fs.read(path, { offset, length: LOG_BYTES }).catch(() => undefined)
+        if (text === undefined) return { tried }
+        // A read that starts mid-file begins in the middle of a line: drop that partial line.
+        const whole = offset > 0 ? text.slice(text.indexOf('\n') + 1) : text
+        return { lines: tailLines(whole, LOG_LINES, LOG_WIDTH), tried }
+      }
     }
   }
 
-  return undefined
+  return { tried }
 }
 
-const logOf = async ($: EngineInterface, w: Where | null, task: Task): Promise<LogView> => {
-  if (task.detail !== undefined) {
-    return { id: task.id, lines: tailLines(task.detail, LOG_LINES, LOG_WIDTH), note: false }
-  }
-  const lines = w ? await readTail($, w, task.id) : undefined
+/** The session as the engine knows it now: its id and its working directory (the folder name may follow either). */
+const placesOf = async ($: EngineInterface): Promise<Where[]> => {
+  const session = await $.session.id()
+  const cwds = [await $.session.cwd(), await $.session.root()]
 
-  return lines && lines.length > 0 ? { id: task.id, lines, note: false } : { id: task.id, lines: [], note: true }
+  return [...new Set(cwds)].map(cwd => ({ session, cwd }))
+}
+
+const logOf = async ($: EngineInterface, task: Task): Promise<LogView> => {
+  if (task.detail !== undefined) {
+    return { id: task.id, lines: tailLines(task.detail, LOG_LINES, LOG_WIDTH), note: null, tried: null }
+  }
+  const { lines, tried } = await readTail($, await placesOf($), task.id)
+  if (lines === undefined) return { id: task.id, lines: [], note: 'none', tried }
+
+  return { id: task.id, lines, note: lines.length === 0 ? 'empty' : null, tried }
 }
 
 export const register: Register = on => {
@@ -222,7 +234,7 @@ export const register: Register = on => {
       const id = await read($, viewing)
       const task = id === null ? undefined : list.find(t => t.id === id)
       if (task) {
-        const view = await logOf($, await read($, where), task)
+        const view = await logOf($, task)
         await update($, log, () => view)
       }
     })
@@ -234,7 +246,6 @@ export const register: Register = on => {
   on('classic.PostToolUse', async ($, e, next) => {
     const input = e.tool_input as (Describable & { run_in_background?: boolean }) | null
     if (input && (input.run_in_background === true || e.tool_name === 'Monitor')) {
-      await update($, where, () => ({ session: e.session_id, cwd: e.cwd }))
       await update($, tasks, list =>
         list.some(t => t.id === e.tool_use_id)
           ? list
@@ -258,7 +269,6 @@ export const register: Register = on => {
         detail: `${c.schedule}\n${c.prompt}`,
       }))
       const all = [...running, ...scheduled]
-      await update($, where, () => ({ session: e.session_id, cwd: e.cwd }))
       await update($, tasks, () => all)
       if (all.length === 0) await update($, expanded, () => false)
       const id = await read($, viewing)
@@ -311,7 +321,7 @@ export const register: Register = on => {
         return
       }
       await update($, viewing, () => task.id)
-      const loaded = await logOf($, await read($, where), task)
+      const loaded = await logOf($, task)
       await update($, log, () => loaded)
     }
 
@@ -321,11 +331,14 @@ export const register: Register = on => {
         {shown.map((t, i) => (
           <Box key={`row-${t.id}`} flexDirection="column">
             <Button key={`task-${t.id}`} label={`${i + 1}. [${kindOf(t)}] ${t.label}`} onPress={() => press(t)} />
-            {openId === t.id && view !== null && view.id === t.id
-              ? view.note
-                ? <Text dimColor>{`     ${texts.noLog}`}</Text>
-                : view.lines.map((line, n) => <Text key={`log-${t.id}-${n}`} dimColor>{`     │ ${line}`}</Text>)
-              : null}
+            {openId === t.id && view !== null && view.id === t.id ? (
+              <Box flexDirection="column">
+                {view.note === null
+                  ? view.lines.map((line, n) => <Text key={`log-${t.id}-${n}`} dimColor>{`     │ ${line}`}</Text>)
+                  : <Text dimColor>{`     ${view.note === 'empty' ? texts.empty : texts.noLog}`}</Text>}
+                {view.note === 'none' && view.tried !== null ? <Text dimColor>{`     → ${clip(view.tried, LOG_WIDTH)}`}</Text> : null}
+              </Box>
+            ) : null}
           </Box>
         ))}
         {hidden > 0 ? <Text dimColor>{`  … +${hidden}`}</Text> : null}
