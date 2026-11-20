@@ -1,7 +1,7 @@
 {
   "name": "bg-indicator",
-  "version": "0.6.2",
-  "description": "See what is still running when Claude hands control back: a live, multilingual, unfoldable band above the prompt, with the log of each background task one click away",
+  "version": "0.7.0",
+  "description": "See what is still running when Claude hands control back: a live, multilingual, unfoldable band above the prompt, with the scrollable log of each background task one click away",
   "author": {
     "name": "ValentinPhB"
   },
@@ -34,7 +34,9 @@
     "typescript",
     "logs",
     "task-logs",
-    "output"
+    "output",
+    "scrollable",
+    "log-viewer"
   ],
   "types": "./types/index.d.ts"
 }

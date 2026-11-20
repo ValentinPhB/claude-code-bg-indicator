@@ -8,15 +8,18 @@ const frame = atom({ plugin: 'bg-indicator', key: 'frame' } as const, 0)
 const expanded = atom({ plugin: 'bg-indicator', key: 'expanded' } as const, false)
 const viewing = atom({ plugin: 'bg-indicator', key: 'viewing' } as const, null as string | null)
 const log = atom({ plugin: 'bg-indicator', key: 'log' } as const, null as LogView | null)
+/** First visible line of the open log, or null while it follows the end (the live tail). */
+const logTop = atom({ plugin: 'bg-indicator', key: 'logTop' } as const, null as number | null)
 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 const MAX_WIDTH = 60
 /** Rows of the unfolded list; the rest is summarised so a long list never pushes the prompt off the screen. */
 const MAX_ROWS = 10
-/** Lines and columns of one task's log shown under its row. */
-const LOG_LINES = 8
+/** One task's log: how many of its last lines are kept, how many show at once, and how wide they may be. */
+const LOG_KEEP = 300
+const LOG_WINDOW = 10
 const LOG_WIDTH = 100
-const LOG_BYTES = 4096
+const LOG_BYTES = 32768
 
 // ── Languages ────────────────────────────────────────────────────────────────
 // The only text the mod writes itself is two short phrases. Task descriptions come from the
@@ -163,6 +166,25 @@ export const tailLines = (text: string, maxLines: number, maxWidth: number): str
   return lines.slice(-maxLines).map(line => clip(line, maxWidth))
 }
 
+/**
+ * Where the log window starts after the wheel (or an arrow key) asks to move it by `by` lines. `null` means the end:
+ * the window follows the live tail. Scrolling up leaves the end; scrolling back down to it rejoins the tail.
+ */
+export const scrollTop = (total: number, size: number, top: number | null, by: number): number | null => {
+  const last = Math.max(0, total - size)
+  const next = Math.min(last, Math.max(0, (top ?? last) + by))
+
+  return next >= last ? null : next
+}
+
+/** The lines the window shows: from `start` (included) to `end` (excluded). */
+export const visibleRange = (total: number, size: number, top: number | null) => {
+  const last = Math.max(0, total - size)
+  const start = top === null ? last : Math.min(top, last)
+
+  return { start, end: Math.min(total, start + size) }
+}
+
 /** The only task whose log is read on a tick: the one the user opened, and only while the list is unfolded. */
 export const refreshTarget = (isOpen: boolean, viewingId: string | null, list: readonly Task[]) =>
   isOpen && viewingId !== null ? list.find(t => t.id === viewingId) : undefined
@@ -186,7 +208,7 @@ const readTail = async ($: EngineInterface, places: Where[], id: string): Promis
         if (text === undefined) return { tried }
         // A read that starts mid-file begins in the middle of a line: drop that partial line.
         const whole = offset > 0 ? text.slice(text.indexOf('\n') + 1) : text
-        return { lines: tailLines(whole, LOG_LINES, LOG_WIDTH), tried }
+        return { lines: tailLines(whole, LOG_KEEP, LOG_WIDTH), tried }
       }
     }
   }
@@ -204,7 +226,7 @@ const placesOf = async ($: EngineInterface): Promise<Where[]> => {
 
 const logOf = async ($: EngineInterface, task: Task): Promise<LogView> => {
   if (task.detail !== undefined) {
-    return { id: task.id, lines: tailLines(task.detail, LOG_LINES, LOG_WIDTH), note: null, tried: null }
+    return { id: task.id, lines: tailLines(task.detail, LOG_KEEP, LOG_WIDTH), note: null, tried: null }
   }
   const { lines, tried } = await readTail($, await placesOf($), task.id)
   if (lines === undefined) return { id: task.id, lines: [], note: 'none', tried }
@@ -279,7 +301,18 @@ export const register: Register = on => {
       if (id !== null && !all.some(t => t.id === id)) {
         await update($, viewing, () => null)
         await update($, log, () => null)
+        await update($, logTop, () => null)
       }
+    }
+
+    return next(e)
+  })
+
+  // The wheel (or an arrow key while the band is focused) scrolls the open log, not the whole band.
+  on('ui.scroll', { component: 'AbovePrompt' }, async ($, e, next) => {
+    const view = await read($, log)
+    if (view !== null && view.note === null && view.lines.length > LOG_WINDOW && e.by !== 0) {
+      await update($, logTop, top => scrollTop(view.lines.length, LOG_WINDOW, top, e.by))
     }
 
     return next(e)
@@ -296,6 +329,7 @@ export const register: Register = on => {
     const isOpen = await read($, expanded)
     const openId = await read($, viewing)
     const view = await read($, log)
+    const top = await read($, logTop)
     const { Box, Button, Text } = $.ui.resolve(e)
     const more = list.length > 1 ? ` (+${list.length - 1})` : ''
     const shown = list.slice(0, MAX_ROWS)
@@ -306,6 +340,7 @@ export const register: Register = on => {
       if (wasOpen) {
         await update($, viewing, () => null)
         await update($, log, () => null)
+        await update($, logTop, () => null)
       }
       await update($, expanded, () => !wasOpen)
     }
@@ -328,6 +363,7 @@ export const register: Register = on => {
 
     // Pressing a row shows (or hides) the last lines of its log right under it.
     const press = async (task: Task) => {
+      await update($, logTop, () => null)
       if ((await read($, viewing)) === task.id) {
         await update($, viewing, () => null)
         await update($, log, () => null)
@@ -341,19 +377,32 @@ export const register: Register = on => {
     return (
       <Box flexDirection="column">
         {header}
-        {shown.map((t, i) => (
-          <Box key={`row-${t.id}`} flexDirection="column">
-            <Button key={`task-${t.id}`} label={`${i + 1}. [${kindOf(t)}] ${t.label}`} onPress={() => press(t)} />
-            {openId === t.id && view !== null && view.id === t.id ? (
-              <Box flexDirection="column">
-                {view.note === null
-                  ? view.lines.map((line, n) => <Text key={`log-${t.id}-${n}`} dimColor>{`     │ ${line}`}</Text>)
-                  : <Text dimColor>{`     ${view.note === 'empty' ? texts.empty : texts.noLog}`}</Text>}
-                {view.note === 'none' && view.tried !== null ? <Text dimColor>{`     → ${clip(view.tried, LOG_WIDTH)}`}</Text> : null}
-              </Box>
-            ) : null}
-          </Box>
-        ))}
+        {shown.map((t, i) => {
+          const log_ = openId === t.id && view !== null && view.id === t.id ? view : null
+          const range = log_ === null ? null : visibleRange(log_.lines.length, LOG_WINDOW, top)
+
+          return (
+            <Box key={`row-${t.id}`} flexDirection="column">
+              <Button key={`task-${t.id}`} label={`${i + 1}. [${kindOf(t)}] ${t.label}`} onPress={() => press(t)} />
+              {log_ !== null && range !== null ? (
+                <Box flexDirection="column">
+                  {log_.note === null
+                    ? log_.lines
+                        .slice(range.start, range.end)
+                        .map((line, n) => <Text key={`log-${t.id}-${n}`} dimColor>{`     │ ${line}`}</Text>)
+                    : <Text dimColor>{`     ${log_.note === 'empty' ? texts.empty : texts.noLog}`}</Text>}
+                  {log_.note === null && log_.lines.length > LOG_WINDOW ? (
+                    <Box>
+                      <Text dimColor>{`     ${range.start + 1}–${range.end} / ${log_.lines.length} `}</Text>
+                      {top !== null ? <Button key="follow" label="⤓" onPress={() => update($, logTop, () => null)} /> : null}
+                    </Box>
+                  ) : null}
+                  {log_.note === 'none' && log_.tried !== null ? <Text dimColor>{`     → ${clip(log_.tried, LOG_WIDTH)}`}</Text> : null}
+                </Box>
+              ) : null}
+            </Box>
+          )
+        })}
         {hidden > 0 ? <Text dimColor>{`  … +${hidden}`}</Text> : null}
       </Box>
     )

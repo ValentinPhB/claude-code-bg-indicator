@@ -8,11 +8,13 @@ import {
   kindOfTool,
   outputPath,
   refreshTarget,
+  scrollTop,
   pickLanguage,
   projectKey,
   scheduledLabel,
   tailLines,
   textsFor,
+  visibleRange,
   wordFor,
 } from '../hooks/register'
 
@@ -445,5 +447,94 @@ test('folding the list closes the open log', async ($, on) => {
   await $.ui.press(TOGGLE)
   await $.ui.press(TOGGLE)
   expect(await ui.find({ type: 'Text', text: /hello/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('the log window follows the end, leaves it when scrolled up and rejoins it at the bottom', () => {
+  // 40 lines, a window of 10: the end is line 30 (0-based start).
+  expect(visibleRange(40, 10, null)).toEqual({ start: 30, end: 40 })
+  expect(scrollTop(40, 10, null, -5)).toBe(25)
+  expect(scrollTop(40, 10, 25, -100)).toBe(0)
+  expect(scrollTop(40, 10, 0, -1)).toBe(0)
+  expect(scrollTop(40, 10, 25, 3)).toBe(28)
+  expect(scrollTop(40, 10, 28, 2)).toBeNull()
+  expect(scrollTop(40, 10, 28, 50)).toBeNull()
+  expect(scrollTop(40, 10, null, 5)).toBeNull()
+  // A log shorter than the window never scrolls.
+  expect(scrollTop(6, 10, null, -3)).toBeNull()
+  expect(visibleRange(6, 10, null)).toEqual({ start: 0, end: 6 })
+  expect(visibleRange(40, 10, 99)).toEqual({ start: 30, end: 40 })
+})
+
+const longLog = Array.from({ length: 40 }, (_, i) => `line ${i + 1}`).join('\n')
+
+const wheel = ($: Engine, by: number) =>
+  $.ui.scroll({
+    component: 'AbovePrompt',
+    requestId: 'bg-indicator',
+    offset: 0,
+    by,
+    bodyRows: 10,
+    contentRows: 30,
+    origin: { kind: 'person' },
+  })
+
+test('the mouse wheel scrolls the open log, the follow button returns to the live end', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  on('ui.scroll', () => ({}))
+  session(on)
+  on('fs.list', () => ({ value: [dir('claude-1000')] }))
+  on('fs.exists', () => ({ value: true }))
+  on('fs.stat', () => ({ value: { kind: 'file' as const, size: 400, mtimeMs: 0, isLink: false } }))
+  on('fs.read', () => ({ value: longLog }))
+  await $.classic.Stop({
+    session_id: 'sess1',
+    cwd: '/work/app',
+    stop_hook_active: false,
+    background_tasks: [{ id: 'id0', type: 'shell', status: 'running', description: 'Long job' }],
+  })
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
+  const shown = async () => (await ui.findAll({ type: 'Text', text: /│/ })).map(t => t.text)
+
+  // Following the end: the last 10 of the 40 lines.
+  expect(await shown()).toEqual(Array.from({ length: 10 }, (_, i) => `     │ line ${31 + i}`))
+  expect((await ui.find({ type: 'Text', text: /\/ 40/ }))?.text).toBe('     31–40 / 40 ')
+  expect(await ui.find({ type: 'Button', key: 'follow' })).toBeUndefined()
+
+  // The wheel goes up by 5 lines: the window leaves the end and a follow button appears.
+  await wheel($, -5)
+  expect((await shown())[0]).toBe('     │ line 26')
+  expect((await ui.find({ type: 'Text', text: /\/ 40/ }))?.text).toBe('     26–35 / 40 ')
+  expect(await ui.find({ type: 'Button', key: 'follow' })).toBeDefined()
+
+  // All the way up, then the follow button jumps back to the live end.
+  await wheel($, -100)
+  expect((await shown())[0]).toBe('     │ line 1')
+  await $.ui.press({ plugin: 'bg-indicator', key: 'follow', surface: 'terminal' })
+  expect((await shown())[0]).toBe('     │ line 31')
+  expect(await ui.find({ type: 'Button', key: 'follow' })).toBeUndefined()
+
+  // Scrolling down to the bottom rejoins the tail by itself.
+  await wheel($, -3)
+  await wheel($, 3)
+  expect((await shown())[0]).toBe('     │ line 31')
+  await ui.unmount()
+})
+
+test('the wheel does nothing while no log is open', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  on('ui.scroll', () => ({}))
+  await $.classic.Stop({
+    stop_hook_active: false,
+    background_tasks: [{ id: 'id0', type: 'shell', status: 'running', description: 'Job' }],
+  })
+  await toggle($)
+  await wheel($, -5)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /│/ })).toBeUndefined()
   await ui.unmount()
 })

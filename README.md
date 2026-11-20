@@ -83,8 +83,12 @@ of that task's log right under it, press it again to hide them.
   3. [subagent] Review the diff
 ```
 
-- **Nothing is read until you press a row.** Only the file of the row you opened is read (its last 4 KB), never the other tasks'
+- **Nothing is read until you press a row.** Only the file of the row you opened is read (its last 32 KB, kept as its last 300 lines), never the other tasks'
   logs, and folding the list closes the log and stops the reading. A task you never open costs nothing.
+- **Scroll the log with the mouse wheel** (or the arrow, page, Home and End keys while the band is focused). The log shows
+  10 lines at a time out of the last 300, with a position marker such as `26–35 / 40`. While you are scrolled up the view
+  stays where you put it as new lines arrive; the `⤓` button, or scrolling back to the bottom, returns to the live end. The
+  wheel moves the open log wherever the pointer is on the band, and the rest of the band stays in place.
 - An open log is **live**: it refreshes about once a second while the task runs, so you can follow a build or a deployment as it prints.
 - Colour codes and control characters are stripped, and each line is clipped by terminal columns.
 - Scheduled wake-ups are listed too, as `[wake-up]` (one-shot) or `[recurring]` (cron, `/loop`). They have no log, so

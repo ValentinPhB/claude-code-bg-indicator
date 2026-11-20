@@ -12,6 +12,7 @@ declare module 'claude-code' {
       expanded: boolean
       viewing: string | null
       log: LogView | null
+      logTop: number | null
     }
   }
 }
