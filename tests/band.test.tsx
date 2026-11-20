@@ -75,7 +75,7 @@ const logFiles = (on: On, content: string, size = 400) => {
   on('fs.read', () => ({ value: content }))
 }
 
-const WORDS = ['Background', 'Background Tasks']
+const WORDS = ['Background task', 'Background Tasks']
 
 /** What `$.process.run` answers when the command ran and ended with that exit code. */
 const exited = (exitCode: number, stderr = '') => ({
@@ -93,12 +93,12 @@ test('the band is hidden while nothing runs in the background', async ($, on) =>
   await ui.unmount()
 })
 
-test('with one task the title is "Background" and the task itself', async ($, on) => {
+test('with one task the title is "Background task" and the task itself', async ($, on) => {
   on('classic.Stop', () => ({}))
   await stopWith($, [{ type: 'shell', text: 'Deploy the API' }])
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /^Background/ }))?.text).toBe('Background ')
+  expect((await ui.find({ type: 'Text', text: /^Background task/ }))?.text).toBe('Background task ')
   expect((await ui.find({ type: 'Text', text: /Deploy the API/ }))?.text).toBe('Deploy the API ')
   expect((await ui.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▾')
   await ui.unmount()
@@ -192,8 +192,8 @@ test('the language comes from the Claude Code setting, then the locale variables
   expect(pickLanguage(undefined, 'C.UTF-8', 'pt_BR.UTF-8')).toBe('pt')
   expect(pickLanguage('Trad-nothing')).toBe('en')
   expect(pickLanguage(undefined, undefined)).toBe('en')
-  expect(wordFor('fr')).toBe('Arrière-plan')
-  expect(wordFor('xx')).toBe('Background')
+  expect(wordFor('fr')).toBe('Tâche en arrière-plan')
+  expect(wordFor('xx')).toBe('Background task')
 })
 
 test('every language has every phrase', () => {
@@ -217,7 +217,7 @@ test('the band follows the language setting, with descriptions in any script', a
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
   await stopWith($, [{ type: 'shell', text: '部署 API サーバー' }])
   const one = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await one.find({ type: 'Text', text: /Arrière-plan/ }))?.text).toBe('Arrière-plan ')
+  expect((await one.find({ type: 'Text', text: /Tâche en arrière-plan/ }))?.text).toBe('Tâche en arrière-plan ')
   expect((await one.find({ type: 'Text', text: /部署/ }))?.text).toBe('部署 API サーバー ')
   await one.unmount()
 

@@ -5,7 +5,7 @@ are running**: shell commands started with `run_in_background`, monitors and sub
 still working on something?"*
 
 ```
-⠹ Background  Deploy the API ▾              one task: its own description
+⠹ Background task  Deploy the API ▾              one task: its own description
 ⠹ Background Tasks (3) ▾                    several tasks: just their number
 ```
 
@@ -70,7 +70,7 @@ it permanent for every session (including the ones an IDE extension starts) by a
 
 ## Unfold the list, read the logs
 
-**The title.** With **one** task the band names it: `⠹ Background  Deploy the API ▾`. With **several** it only says
+**The title.** With **one** task the band names it: `⠹ Background task  Deploy the API ▾`. With **several** it only says
 `⠹ Background Tasks (3) ▾`, so the title never pretends that the first task is the only one. The `▾` button unfolds the list.
 
 Unfolded, you see **every** background task (from 1 to N), one per row. A row is plain text, **not** one big button: only
@@ -159,17 +159,17 @@ Claude Code.
 
 ## Languages
 
-The only word the mod writes itself is the label of the band. It follows, in this order, Claude Code's own `language`
+The only words the mod writes itself are the band title (one task or several) and a few short notices. It follows, in this order, Claude Code's own `language`
 setting, then the `LC_ALL`, `LC_MESSAGES` and `LANG` environment variables, and falls back to English.
 
-| Code | Label | Code | Label | Code | Label |
+| Code | Label (one task) | Code | Label (one task) | Code | Label (one task) |
 | --- | --- | --- | --- | --- | --- |
-| `en` | Background | `nl` | Op de achtergrond | `ja` | バックグラウンド |
-| `fr` | Arrière-plan | `pl` | W tle | `zh` | 后台 |
-| `es` | Segundo plano | `sv` | Bakgrund | `zh-tw` | 背景 |
-| `de` | Hintergrund | `tr` | Arka plan | `ko` | 백그라운드 |
-| `pt` | Segundo plano | `ru` | Фон | `vi` | Nền |
-| `it` | In background | `uk` | Фон | `id` | Latar belakang |
+| `en` | Background task | `nl` | Achtergrondtaak | `ja` | バックグラウンドタスク |
+| `fr` | Tâche en arrière-plan | `pl` | Zadanie w tle | `zh` | 后台任务 |
+| `es` | Tarea en segundo plano | `sv` | Bakgrundsuppgift | `zh-tw` | 背景任務 |
+| `de` | Hintergrundaufgabe | `tr` | Arka plan görevi | `ko` | 백그라운드 작업 |
+| `pt` | Tarefa em segundo plano | `ru` | Фоновая задача | `vi` | Tác vụ nền |
+| `it` | Attività in background | `uk` | Фонове завдання | `id` | Tugas latar belakang |
 
 - Task descriptions come from your session and are shown as they are, in any script (Latin, Cyrillic, CJK, emoji...).
 - Long descriptions are clipped by **terminal columns**, not by characters: CJK characters and emoji take two columns,
