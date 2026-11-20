@@ -163,6 +163,10 @@ export const tailLines = (text: string, maxLines: number, maxWidth: number): str
   return lines.slice(-maxLines).map(line => clip(line, maxWidth))
 }
 
+/** The only task whose log is read on a tick: the one the user opened, and only while the list is unfolded. */
+export const refreshTarget = (isOpen: boolean, viewingId: string | null, list: readonly Task[]) =>
+  isOpen && viewingId !== null ? list.find(t => t.id === viewingId) : undefined
+
 const ROOTS = ['/private/tmp', '/tmp'] as const
 
 /** The last lines of a task's output file; `lines` is undefined when no file is found, `tried` is the first path looked for. */
@@ -231,8 +235,8 @@ export const register: Register = on => {
       const list = await read($, tasks)
       if (list.length === 0) return
       await update($, frame, f => (f + 1) % FRAMES.length)
-      const id = await read($, viewing)
-      const task = id === null ? undefined : list.find(t => t.id === id)
+      // Nothing is read unless the list is open on a row the user pressed: that one file, nothing else.
+      const task = refreshTarget(await read($, expanded), await read($, viewing), list)
       if (task) {
         const view = await logOf($, task)
         await update($, log, () => view)
@@ -297,6 +301,15 @@ export const register: Register = on => {
     const shown = list.slice(0, MAX_ROWS)
     const hidden = list.length - shown.length
 
+    // Folding the list closes the open log too, so nothing keeps being read behind a folded band.
+    const flip = async (wasOpen: boolean) => {
+      if (wasOpen) {
+        await update($, viewing, () => null)
+        await update($, log, () => null)
+      }
+      await update($, expanded, () => !wasOpen)
+    }
+
     const header = (
       <Box>
         <Text color="yellow">{FRAMES[f] ?? FRAMES[0]} </Text>
@@ -305,7 +318,7 @@ export const register: Register = on => {
         </Text>
         <Text>{first.label}</Text>
         <Text dimColor>{more} </Text>
-        <Button key="toggle" label={isOpen ? '▾' : `▸ ${list.length}`} onPress={() => update($, expanded, v => !v)} />
+        <Button key="toggle" label={isOpen ? '▾' : `▸ ${list.length}`} onPress={() => flip(isOpen)} />
       </Box>
     )
 

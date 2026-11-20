@@ -7,6 +7,7 @@ import {
   kindOf,
   kindOfTool,
   outputPath,
+  refreshTarget,
   pickLanguage,
   projectKey,
   scheduledLabel,
@@ -409,5 +410,40 @@ test('a missing file shows where it was looked for; an empty file says it is emp
   await $.ui.press({ plugin: 'bg-indicator', key: 'task-empty', surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: /Log is empty/ }))?.text).toBe('     Log is empty')
   expect(await ui.find({ type: 'Text', text: /→/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('only the task the user opened is refreshed, and only while the list is unfolded', () => {
+  const list = [
+    { id: 'a', label: 'A', kind: 'shell' },
+    { id: 'b', label: 'B', kind: 'shell' },
+  ]
+  expect(refreshTarget(true, 'b', list)?.id).toBe('b')
+  expect(refreshTarget(false, 'b', list)).toBeUndefined()
+  expect(refreshTarget(true, null, list)).toBeUndefined()
+  expect(refreshTarget(true, 'gone', list)).toBeUndefined()
+})
+
+test('folding the list closes the open log', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  session(on)
+  on('fs.list', () => ({ value: [dir('claude-1000')] }))
+  on('fs.exists', () => ({ value: true }))
+  on('fs.stat', () => ({ value: { kind: 'file' as const, size: 10, mtimeMs: 0, isLink: false } }))
+  on('fs.read', () => ({ value: 'hello\n' }))
+  await $.classic.Stop({
+    session_id: 'sess1',
+    cwd: '/work/app',
+    stop_hook_active: false,
+    background_tasks: [{ id: 'id0', type: 'shell', status: 'running', description: 'Job' }],
+  })
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: /hello/ })).toBeDefined()
+  await $.ui.press(TOGGLE)
+  await $.ui.press(TOGGLE)
+  expect(await ui.find({ type: 'Text', text: /hello/ })).toBeUndefined()
   await ui.unmount()
 })

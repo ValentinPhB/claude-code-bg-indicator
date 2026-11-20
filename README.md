@@ -83,6 +83,8 @@ of that task's log right under it, press it again to hide them.
   3. [subagent] Review the diff
 ```
 
+- **Nothing is read until you press a row.** Only the file of the row you opened is read (its last 4 KB), never the other tasks'
+  logs, and folding the list closes the log and stops the reading. A task you never open costs nothing.
 - An open log is **live**: it refreshes about once a second while the task runs, so you can follow a build or a deployment as it prints.
 - Colour codes and control characters are stripped, and each line is clipped by terminal columns.
 - Scheduled wake-ups are listed too, as `[wake-up]` (one-shot) or `[recurring]` (cron, `/loop`). They have no log, so
