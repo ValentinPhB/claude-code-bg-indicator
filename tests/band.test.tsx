@@ -785,7 +785,7 @@ test('the band is drawn in small type so it takes little room in the chat', asyn
   await ui.unmount()
 })
 
-test('lines are cut to the width of the band so none wraps', async ($, on) => {
+test('log lines are cut to the width of the band so none wraps', async ($, on) => {
   on('classic.Stop', () => ({}))
   session(on)
   logFiles(on, `${'x'.repeat(90)}\n`, 92)
@@ -796,7 +796,8 @@ test('lines are cut to the width of the band so none wraps', async ($, on) => {
   const ui = await $.ui.mount({ ...narrow(49), surface: 'terminal' })
   await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
   const row = (await ui.find({ type: 'Text', text: /^1\. / }))?.text ?? ''
-  expect(Array.from(row).length).toBeLessThanOrEqual(33 + 4)
+  // The title is drawn whole up to 120 columns and wraps inside its own box, so the buttons keep their place.
+  expect(Array.from(row).length).toBeLessThanOrEqual(120 + 4)
   const log_ = (await ui.findAll({ type: 'Text', text: /^ x+/ })).map(t => t.text)
   expect(log_).toHaveLength(1)
   expect(Array.from(log_[0] ?? '').length).toBeLessThanOrEqual(1 + 41)
@@ -851,7 +852,7 @@ test('a log that fits in the window has no arrows', async ($, on) => {
 test('a title cut to fit the band is shown in full, hidden until the pointer is on its row', async ($, on) => {
   on('classic.Stop', () => ({}))
   session(on)
-  const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet'
+  const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet de bout en bout avec les nouveaux filtres de période et d auteur, vérifier les exports et nettoyer ensuite tous les documents de test'
   await stopWith($, [
     { type: 'shell', text: long },
     { type: 'shell', text: 'Short' },
@@ -859,7 +860,7 @@ test('a title cut to fit the band is shown in full, hidden until the pointer is 
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  const full = await ui.find({ type: 'Text', text: /relancer le test complet$/ })
+  const full = await ui.find({ type: 'Text', text: /nettoyer ensuite tous les documents de test\s*$/ })
   expect(full?.text).toBe(long)
   expect(await ui.find({ type: 'Text', text: /^Short$/ })).toBeUndefined()
   await ui.unmount()
@@ -869,12 +870,22 @@ test('unfolding a row whose title is cut shows the full title, whatever the poin
   on('classic.Stop', () => ({}))
   session(on)
   logFiles(on, 'line 1\n', 14)
-  const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet'
+  const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet de bout en bout avec les nouveaux filtres de période et d auteur, vérifier les exports et nettoyer ensuite tous les documents de test'
   await stopWith($, [{ type: 'shell', text: long }])
   await toggle($)
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
-  const titles = await ui.findAll({ type: 'Text', text: /relancer le test complet\s*$/ })
+  const titles = await ui.findAll({ type: 'Text', text: /nettoyer ensuite tous les documents de test\s*$/ })
   expect(titles.some(x => x.text.trim() === long)).toBe(true)
+  await ui.unmount()
+})
+
+test('a title is drawn up to 120 columns before it is cut', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  const title = 'a'.repeat(110)
+  await stopWith($, [{ type: 'shell', text: title }])
+  await toggle($)
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /^1\. a+/ }))?.text).toBe(`1. ${title} `)
   await ui.unmount()
 })
