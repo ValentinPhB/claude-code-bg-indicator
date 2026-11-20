@@ -11,8 +11,8 @@ const log = atom({ plugin: 'bg-indicator', key: 'log' } as const, null as LogVie
 /** First visible line of the open log, or null while it follows the end (the live tail). */
 const logTop = atom({ plugin: 'bg-indicator', key: 'logTop' } as const, null as number | null)
 
-// One dot that blinks: quiet, and it takes a single cell.
-const FRAMES = ['●', '○']
+// Four dots, one lit at a time: quiet, and it takes few cells.
+const FRAMES = ['●○○○', '○●○○', '○○●○', '○○○●']
 const MAX_WIDTH = 60
 /** Rows of the unfolded list; the rest is summarised so a long list never pushes the prompt off the screen. */
 const MAX_ROWS = 10

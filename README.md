@@ -187,7 +187,7 @@ It reads files to show a task's log, and writes a file only when you press `>_` 
 | `classic.PostToolUse` | If the tool call started work in the background (`run_in_background: true`, or the `Monitor` tool), the task is added to the band right away. |
 | `classic.Stop` | **Every time control returns to you**, the engine lists the background work still in flight (`background_tasks`) and the wake-ups scheduled to resume the session later (`session_crons`: `ScheduleWakeup`, `/loop`, cron). That list **replaces** what the band shows, so it is the source of truth and a finished task cannot linger. A wake-up is shown with a clock: `⏰ Check the deployment`. |
 | `ui.render` on `AbovePrompt` | Draws the band (and, once unfolded, the list and the log of the task you opened) when there is something to show, or lets the default prompt area through when there is not. |
-| `session.start` | Starts a timer that blinks the dot only while a task is shown, so an idle session is never redrawn. |
+| `session.start` | Starts a timer that moves the four dots only while a task is shown, so an idle session is never redrawn. |
 
 Descriptions come from the task's own `description` (falling back to its command, then its type) and are clipped to 60
 characters.
