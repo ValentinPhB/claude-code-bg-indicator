@@ -11,7 +11,8 @@ const log = atom({ plugin: 'bg-indicator', key: 'log' } as const, null as LogVie
 /** First visible line of the open log, or null while it follows the end (the live tail). */
 const logTop = atom({ plugin: 'bg-indicator', key: 'logTop' } as const, null as number | null)
 
-const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
+// One dot that blinks: quiet, and it takes a single cell.
+const FRAMES = ['●', '○']
 const MAX_WIDTH = 60
 /** Rows of the unfolded list; the rest is summarised so a long list never pushes the prompt off the screen. */
 const MAX_ROWS = 10
@@ -340,7 +341,7 @@ export const register: Register = on => {
     }
 
     // Animate (and so redraw) only while something is running; keep an open log fresh.
-    $.clock.every(900, async () => {
+    $.clock.every(700, async () => {
       const list = await read($, tasks)
       if (list.length === 0) return
       await update($, frame, f => (f + 1) % FRAMES.length)
@@ -439,15 +440,15 @@ export const register: Register = on => {
     // One task: its own description. Several: just their number, the list is one press away.
     const header = (
       <Box>
-        <Text color="yellow" size="footnote">{FRAMES[f] ?? FRAMES[0]} </Text>
+        <Text color="yellow" size="caption">{FRAMES[f] ?? FRAMES[0]} </Text>
         {single
-          ? <Text bold color="yellow" size="footnote">{texts.background}{' '}</Text>
-          : <Text bold color="yellow" size="footnote">{texts.tasks}{' '}</Text>}
+          ? <Text bold color="yellow" size="caption">{texts.background}{' '}</Text>
+          : <Text bold color="yellow" size="caption">{texts.tasks}{' '}</Text>}
         {single
-          ? <Text size="footnote">{clip(first.label, Math.max(12, columns - 22))}{' '}</Text>
-          : <Text size="footnote">{`(${list.length})`}{' '}</Text>}
+          ? <Text size="caption">{clip(first.label, Math.max(12, columns - 22))}{' '}</Text>
+          : <Text size="caption">{`(${list.length})`}{' '}</Text>}
         <Button key="toggle" label={isOpen ? '▴' : '▾'} onPress={() => flip(isOpen)}>
-          <Text size="footnote">{isOpen ? '▴' : '▾'}</Text>
+          <Text size="caption">{isOpen ? '▴' : '▾'}</Text>
         </Button>
       </Box>
     )

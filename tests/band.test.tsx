@@ -773,7 +773,7 @@ test('the band is drawn in small type so it takes little room in the chat', asyn
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
   const size = async (query: { type: string; text: RegExp }) => (await ui.find(query))?.props['size']
-  expect(await size({ type: 'Text', text: /Background Tasks/ })).toBe('footnote')
+  expect(await size({ type: 'Text', text: /Background Tasks/ })).toBe('caption')
   expect(await size({ type: 'Text', text: /^1\. One/ })).toBe('footnote')
   expect(await size({ type: 'Text', text: /line 2/ })).toBe('caption')
   expect((await ui.find({ type: 'Text', text: /line 2/ }))?.props['mono']).toBe(true)
