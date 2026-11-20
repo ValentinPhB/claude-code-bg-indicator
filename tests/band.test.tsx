@@ -1,7 +1,18 @@
 import { expect, test } from 'claude-code/testing'
 import type { Engine } from 'claude-code/testing'
 
-import { clip, kindOfTool, pickLanguage, scheduledLabel, wordFor } from '../hooks/register'
+import {
+  clip,
+  kindOf,
+  kindOfTool,
+  outputPath,
+  pickLanguage,
+  projectKey,
+  scheduledLabel,
+  tailLines,
+  textsFor,
+  wordFor,
+} from '../hooks/register'
 
 const BAND = {
   plugin: 'bg-indicator',
@@ -188,16 +199,15 @@ test('pressing the button unfolds the whole list, with the kind of each task, an
   await toggle($)
   const open = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect((await open.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▾')
-  expect((await open.find({ type: 'Text', text: /1\. \[shell\]/ }))?.text).toBe('  1. [shell] ')
-  expect((await open.find({ type: 'Text', text: /2\. \[monitor\]/ }))?.text).toBe('  2. [monitor] ')
-  expect((await open.find({ type: 'Text', text: /3\. \[subagent\]/ }))?.text).toBe('  3. [subagent] ')
-  expect((await open.find({ type: 'Text', text: /Review the diff/ }))?.text).toBe('Review the diff')
+  expect((await open.find({ type: 'Button', text: /1\. \[shell\]/ }))?.text).toBe('1. [shell] Deploy the API')
+  expect((await open.find({ type: 'Button', text: /2\. \[monitor\]/ }))?.text).toBe('2. [monitor] Watch the logs')
+  expect((await open.find({ type: 'Button', text: /3\. \[subagent\]/ }))?.text).toBe('3. [subagent] Review the diff')
   await open.unmount()
 
   await toggle($)
   const folded = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect((await folded.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▸ 3')
-  expect(await folded.find({ type: 'Text', text: /Review the diff/ })).toBeUndefined()
+  expect(await folded.find({ type: 'Button', text: /Review the diff/ })).toBeUndefined()
   await folded.unmount()
 })
 
@@ -207,7 +217,7 @@ test('a single task can be unfolded too', async ($, on) => {
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /1\. \[shell\]/ }))?.text).toBe('  1. [shell] ')
+  expect((await ui.find({ type: 'Button', text: /1\. \[shell\]/ }))?.text).toBe('1. [shell] Only one')
   await ui.unmount()
 })
 
@@ -220,7 +230,7 @@ test('a long list is capped and the rest is summarised', async ($, on) => {
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect(await ui.findAll({ type: 'Text', text: /\[shell\]/ })).toHaveLength(10)
+  expect(await ui.findAll({ type: 'Button', text: /\[shell\]/ })).toHaveLength(10)
   expect((await ui.find({ type: 'Text', text: /… \+4/ }))?.text).toBe('  … +4')
   await ui.unmount()
 })
@@ -250,8 +260,8 @@ test('a scheduled wake-up is listed with its own kind', async ($, on) => {
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect(await ui.find({ type: 'Text', text: /\[wake-up\]/ })).toBeDefined()
-  expect(await ui.find({ type: 'Text', text: /\[recurring\]/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', text: /\[wake-up\]/ })).toBeDefined()
+  expect(await ui.find({ type: 'Button', text: /\[recurring\]/ })).toBeDefined()
   await ui.unmount()
 })
 
@@ -259,4 +269,106 @@ test('the kind of a task started by a tool call follows the tool', () => {
   expect(kindOfTool('Monitor')).toBe('monitor')
   expect(kindOfTool('Agent')).toBe('subagent')
   expect(kindOfTool('Bash')).toBe('shell')
+})
+
+// ── Logs ─────────────────────────────────────────────────────────────────────
+
+test('the project folder is named after the directory, like Claude Code does', () => {
+  expect(projectKey('/Users/ada/dev/my-app')).toBe('-Users-ada-dev-my-app')
+  expect(projectKey('/home/bob/Mon Projet/été')).toBe('-home-bob-Mon-Projet--t-')
+  expect(outputPath('/tmp', 'claude-1000', { session: 's1', cwd: '/home/bob/app' }, 'b1')).toBe(
+    '/tmp/claude-1000/-home-bob-app/s1/tasks/b1.output',
+  )
+})
+
+test('a log tail drops colours and control characters, keeps the last lines and clips the width', () => {
+  const raw = '\u001b[32mstart\u001b[0m\r\nline 2\r\n\u0007line 3\n\n\n'
+  expect(tailLines(raw, 10, 80)).toEqual(['start', 'line 2', 'line 3'])
+  expect(tailLines('a\nb\nc\nd\ne', 2, 80)).toEqual(['d', 'e'])
+  expect(tailLines('x'.repeat(300), 3, 20)).toEqual(['x'.repeat(19) + '…'])
+  expect(tailLines('', 5, 20)).toEqual([])
+})
+
+test('every language has both phrases', () => {
+  for (const code of ['en', 'fr', 'es', 'de', 'pt', 'it', 'nl', 'pl', 'sv', 'tr', 'ru', 'uk', 'ja', 'zh', 'zh-tw', 'ko', 'vi', 'id']) {
+    expect(textsFor(code).background.length).toBeGreaterThan(0)
+    expect(textsFor(code).noLog.length).toBeGreaterThan(0)
+  }
+  expect(textsFor('xx').noLog).toBe('No log available')
+})
+
+const dir = (name: string) => ({ name, kind: 'dir' as const, size: 0, mtimeMs: 0, isLink: false })
+
+const LOG_FILE = '/private/tmp/claude-1000/-work-app/sess1/tasks/id0.output'
+
+test('pressing a row shows the last lines of its log, and pressing it again hides them', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  on('fs.list', () => ({ value: [dir('claude-1000'), dir('other')] }))
+  on('fs.exists', (_, e) => ({ value: e.path === LOG_FILE }))
+  on('fs.stat', () => ({ value: { kind: 'file' as const, size: 40, mtimeMs: 0, isLink: false } }))
+  on('fs.read', () => ({ value: 'building…\nstep 2 done\n\u001b[32mall good\u001b[0m\n' }))
+
+  await $.classic.Stop({
+    session_id: 'sess1',
+    cwd: '/work/app',
+    stop_hook_active: false,
+    background_tasks: [{ id: 'id0', type: 'shell', status: 'running', description: 'Build' }],
+  })
+  await toggle($)
+
+  const row = { plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' } as const
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press(row)
+  expect((await ui.find({ type: 'Text', text: /step 2 done/ }))?.text).toBe('     │ step 2 done')
+  expect((await ui.find({ type: 'Text', text: /all good/ }))?.text).toBe('     │ all good')
+  await $.ui.press(row)
+  expect(await ui.find({ type: 'Text', text: /step 2 done/ })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('a task without a log file says so, in the language of the user', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  on('fs.list', () => ({ value: [] }))
+  on('settings.read', () => ({ value: { language: 'French' } }))
+  on('env.get', () => ({ value: undefined }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('clock.every', () => ({ value: undefined }))
+  await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
+
+  await $.classic.Stop({
+    session_id: 'sess1',
+    cwd: '/work/app',
+    stop_hook_active: false,
+    background_tasks: [{ id: 'gone', type: 'shell', status: 'running', description: 'Vanished' }],
+  })
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-gone', surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: /Aucun journal/ }))?.text).toBe('     Aucun journal disponible')
+  await ui.unmount()
+})
+
+test('a scheduled wake-up shows its schedule and its whole prompt instead of a log', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  await $.classic.Stop({
+    session_id: 'sess1',
+    cwd: '/work/app',
+    stop_hook_active: false,
+    background_tasks: [],
+    session_crons: [{ id: 'w1', schedule: '*/10 * * * *', recurring: true, prompt: 'Check the deployment' }],
+  })
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-w1', surface: 'terminal' })
+  const lines = (await ui.findAll({ type: 'Text', text: /│/ })).map(t => t.text)
+  expect(lines).toEqual(['     │ */10 * * * *', '     │ Check the deployment'])
+  await ui.unmount()
+})
+
+test('a task kept by an older version without a kind is shown as a plain task, never as "undefined"', () => {
+  expect(kindOf({})).toBe('task')
+  expect(kindOf({ kind: '' })).toBe('task')
+  expect(kindOf({ kind: 'monitor' })).toBe('monitor')
 })

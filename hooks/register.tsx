@@ -1,40 +1,49 @@
 import { atom, read, update } from 'claude-code'
-import type { Register } from 'claude-code'
+import type { EngineInterface, Register } from 'claude-code'
 
-import type { Task } from '../types'
+import type { LogView, Task, Where } from '../types'
 
 const tasks = atom({ plugin: 'bg-indicator', key: 'tasks' } as const, [] as Task[])
 const frame = atom({ plugin: 'bg-indicator', key: 'frame' } as const, 0)
 const expanded = atom({ plugin: 'bg-indicator', key: 'expanded' } as const, false)
+const where = atom({ plugin: 'bg-indicator', key: 'where' } as const, null as Where | null)
+const viewing = atom({ plugin: 'bg-indicator', key: 'viewing' } as const, null as string | null)
+const log = atom({ plugin: 'bg-indicator', key: 'log' } as const, null as LogView | null)
 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 const MAX_WIDTH = 60
 /** Rows of the unfolded list; the rest is summarised so a long list never pushes the prompt off the screen. */
 const MAX_ROWS = 10
+/** Lines and columns of one task's log shown under its row. */
+const LOG_LINES = 8
+const LOG_WIDTH = 100
+const LOG_BYTES = 4096
 
 // ── Languages ────────────────────────────────────────────────────────────────
-// The only text the mod writes itself is one word. Task descriptions come from the
+// The only text the mod writes itself is two short phrases. Task descriptions come from the
 // session and are shown as they are, in any script. To add a language, add a line to
 // MESSAGES (key = lowercase language code) and one to ALIASES.
-const MESSAGES: Record<string, string> = {
-  en: 'Background',
-  fr: 'Arrière-plan',
-  es: 'Segundo plano',
-  de: 'Hintergrund',
-  pt: 'Segundo plano',
-  it: 'In background',
-  nl: 'Op de achtergrond',
-  pl: 'W tle',
-  sv: 'Bakgrund',
-  tr: 'Arka plan',
-  ru: 'Фон',
-  uk: 'Фон',
-  ja: 'バックグラウンド',
-  zh: '后台',
-  'zh-tw': '背景',
-  ko: '백그라운드',
-  vi: 'Nền',
-  id: 'Latar belakang',
+export type Texts = { background: string; noLog: string }
+
+const MESSAGES: Record<string, Texts> = {
+  en: { background: 'Background', noLog: 'No log available' },
+  fr: { background: 'Arrière-plan', noLog: 'Aucun journal disponible' },
+  es: { background: 'Segundo plano', noLog: 'Sin registro disponible' },
+  de: { background: 'Hintergrund', noLog: 'Kein Protokoll verfügbar' },
+  pt: { background: 'Segundo plano', noLog: 'Nenhum registro disponível' },
+  it: { background: 'In background', noLog: 'Nessun log disponibile' },
+  nl: { background: 'Op de achtergrond', noLog: 'Geen log beschikbaar' },
+  pl: { background: 'W tle', noLog: 'Brak dziennika' },
+  sv: { background: 'Bakgrund', noLog: 'Ingen logg tillgänglig' },
+  tr: { background: 'Arka plan', noLog: 'Günlük yok' },
+  ru: { background: 'Фон', noLog: 'Журнал недоступен' },
+  uk: { background: 'Фон', noLog: 'Журнал недоступний' },
+  ja: { background: 'バックグラウンド', noLog: 'ログはありません' },
+  zh: { background: '后台', noLog: '没有可用日志' },
+  'zh-tw': { background: '背景', noLog: '沒有可用的記錄' },
+  ko: { background: '백그라운드', noLog: '사용 가능한 로그가 없습니다' },
+  vi: { background: 'Nền', noLog: 'Không có nhật ký' },
+  id: { background: 'Latar belakang', noLog: 'Log tidak tersedia' },
 }
 
 // A code matches alone or followed by a separator (fr, fr_FR.UTF-8, fr-CA); a name matches as a prefix.
@@ -74,7 +83,12 @@ export const pickLanguage = (...candidates: (string | undefined)[]): string => {
   return 'en'
 }
 
-export const wordFor = (language: string) => MESSAGES[language] ?? MESSAGES['en'] ?? 'Background'
+const FALLBACK: Texts = { background: 'Background', noLog: 'No log available' }
+
+export const textsFor = (language: string): Texts => MESSAGES[language] ?? MESSAGES['en'] ?? FALLBACK
+
+/** The label of the band, in the given language. */
+export const wordFor = (language: string) => textsFor(language).background
 
 // ── Text width ───────────────────────────────────────────────────────────────
 // CJK characters and emoji take two terminal columns; clipping by columns, and by whole characters
@@ -111,6 +125,9 @@ type Describable = { description?: string; command?: string; type?: string }
 export const kindOfTool = (tool: string) =>
   tool === 'Monitor' ? 'monitor' : tool === 'Agent' || tool === 'Task' ? 'subagent' : 'shell'
 
+/** A task kept by an older version of the mod may lack its kind: it is shown as a plain `task`, never as `undefined`. */
+export const kindOf = (task: { kind?: string | undefined }) => task.kind || 'task'
+
 export const labelOf = (item: Describable) =>
   clip((item.description || item.command || item.type || 'task').replace(/\s+/g, ' ').trim(), MAX_WIDTH)
 
@@ -118,13 +135,74 @@ export const labelOf = (item: Describable) =>
 export const scheduledLabel = (prompt: string) =>
   `⏰ ${clip((prompt || 'scheduled').replace(/\s+/g, ' ').trim(), MAX_WIDTH - 3)}`
 
+// ── Logs ─────────────────────────────────────────────────────────────────────
+// Claude Code keeps the output of each background task in a file of its session's temporary folder. The mod
+// looks for it there and shows its last lines. That layout belongs to Claude Code, not to a documented API,
+// so the lookup is best effort: when the file is not found the row says so instead of failing.
+
+/** Claude Code names a project's folder after its directory, every character that is not a letter or digit becoming `-`. */
+export const projectKey = (cwd: string) => cwd.replace(/[^A-Za-z0-9]/g, '-')
+
+/** Where a task's output file is, given the temporary root and the entry (`claude-<uid>`) found under it. */
+export const outputPath = (root: string, entry: string, where: Where, id: string) =>
+  `${root}/${entry}/${projectKey(where.cwd)}/${where.session}/tasks/${id}.output`
+
+// eslint-disable-next-line no-control-regex
+const ANSI = /\u001b\[[0-9;?]*[ -/]*[@-~]|\u001b\][^\u0007]*\u0007/g
+// eslint-disable-next-line no-control-regex
+const CONTROL = /[\u0000-\u0008\u000b-\u001f\u007f]/g
+
+/** The last non-empty lines of a text, without colour codes or control characters, each clipped by columns. */
+export const tailLines = (text: string, maxLines: number, maxWidth: number): string[] => {
+  const lines = text
+    .replace(ANSI, '')
+    .replace(/\r\n?/g, '\n')
+    .replace(CONTROL, '')
+    .split('\n')
+  while (lines.length > 0 && (lines.at(-1) ?? '').trim() === '') lines.pop()
+
+  return lines.slice(-maxLines).map(line => clip(line, maxWidth))
+}
+
+const ROOTS = ['/private/tmp', '/tmp'] as const
+
+/** The last lines of a task's output file, or undefined when no such file is found. */
+const readTail = async ($: EngineInterface, w: Where, id: string): Promise<string[] | undefined> => {
+  for (const root of ROOTS) {
+    const entries = await $.fs.list(root).catch(() => [])
+    for (const entry of entries) {
+      if (entry.kind !== 'dir' || !entry.name.startsWith('claude-')) continue
+      const path = outputPath(root, entry.name, w, id)
+      if (!(await $.fs.exists(path).catch(() => false))) continue
+      const size = (await $.fs.stat(path).catch(() => undefined))?.size ?? 0
+      const offset = Math.max(0, size - LOG_BYTES)
+      const text = await $.fs.read(path, { offset, length: LOG_BYTES }).catch(() => undefined)
+      if (text === undefined) return undefined
+      // A read that starts mid-file begins in the middle of a line: drop that partial line.
+      const whole = offset > 0 ? text.slice(text.indexOf('\n') + 1) : text
+      return tailLines(whole, LOG_LINES, LOG_WIDTH)
+    }
+  }
+
+  return undefined
+}
+
+const logOf = async ($: EngineInterface, w: Where | null, task: Task): Promise<LogView> => {
+  if (task.detail !== undefined) {
+    return { id: task.id, lines: tailLines(task.detail, LOG_LINES, LOG_WIDTH), note: false }
+  }
+  const lines = w ? await readTail($, w, task.id) : undefined
+
+  return lines && lines.length > 0 ? { id: task.id, lines, note: false } : { id: task.id, lines: [], note: true }
+}
+
 export const register: Register = on => {
-  let word = wordFor('en')
+  let texts = textsFor('en')
 
   on('session.start', async ($, e, next) => {
     try {
       const setting = await $.settings.read({ key: 'language' })
-      word = wordFor(
+      texts = textsFor(
         pickLanguage(
           typeof setting === 'string' ? setting : undefined,
           await $.env.get('LC_ALL'),
@@ -133,13 +211,19 @@ export const register: Register = on => {
         ),
       )
     } catch {
-      word = wordFor('en')
+      texts = textsFor('en')
     }
 
-    // Animate (and so redraw) only while something is running.
+    // Animate (and so redraw) only while something is running; keep an open log fresh.
     $.clock.every(900, async () => {
-      if ((await read($, tasks)).length > 0) {
-        await update($, frame, f => (f + 1) % FRAMES.length)
+      const list = await read($, tasks)
+      if (list.length === 0) return
+      await update($, frame, f => (f + 1) % FRAMES.length)
+      const id = await read($, viewing)
+      const task = id === null ? undefined : list.find(t => t.id === id)
+      if (task) {
+        const view = await logOf($, await read($, where), task)
+        await update($, log, () => view)
       }
     })
 
@@ -150,6 +234,7 @@ export const register: Register = on => {
   on('classic.PostToolUse', async ($, e, next) => {
     const input = e.tool_input as (Describable & { run_in_background?: boolean }) | null
     if (input && (input.run_in_background === true || e.tool_name === 'Monitor')) {
+      await update($, where, () => ({ session: e.session_id, cwd: e.cwd }))
       await update($, tasks, list =>
         list.some(t => t.id === e.tool_use_id)
           ? list
@@ -170,10 +255,17 @@ export const register: Register = on => {
         id: c.id,
         label: scheduledLabel(c.prompt),
         kind: c.recurring ? 'recurring' : 'wake-up',
+        detail: `${c.schedule}\n${c.prompt}`,
       }))
       const all = [...running, ...scheduled]
+      await update($, where, () => ({ session: e.session_id, cwd: e.cwd }))
       await update($, tasks, () => all)
       if (all.length === 0) await update($, expanded, () => false)
+      const id = await read($, viewing)
+      if (id !== null && !all.some(t => t.id === id)) {
+        await update($, viewing, () => null)
+        await update($, log, () => null)
+      }
     }
 
     return next(e)
@@ -188,6 +280,8 @@ export const register: Register = on => {
 
     const f = await read($, frame)
     const isOpen = await read($, expanded)
+    const openId = await read($, viewing)
+    const view = await read($, log)
     const { Box, Button, Text } = $.ui.resolve(e)
     const more = list.length > 1 ? ` (+${list.length - 1})` : ''
     const shown = list.slice(0, MAX_ROWS)
@@ -197,7 +291,7 @@ export const register: Register = on => {
       <Box>
         <Text color="yellow">{FRAMES[f] ?? FRAMES[0]} </Text>
         <Text bold color="yellow">
-          {word}{' '}
+          {texts.background}{' '}
         </Text>
         <Text>{first.label}</Text>
         <Text dimColor>{more} </Text>
@@ -209,13 +303,29 @@ export const register: Register = on => {
       return header
     }
 
+    // Pressing a row shows (or hides) the last lines of its log right under it.
+    const press = async (task: Task) => {
+      if ((await read($, viewing)) === task.id) {
+        await update($, viewing, () => null)
+        await update($, log, () => null)
+        return
+      }
+      await update($, viewing, () => task.id)
+      const loaded = await logOf($, await read($, where), task)
+      await update($, log, () => loaded)
+    }
+
     return (
       <Box flexDirection="column">
         {header}
         {shown.map((t, i) => (
-          <Box key={t.id}>
-            <Text dimColor>{`  ${i + 1}. [${t.kind}] `}</Text>
-            <Text>{t.label}</Text>
+          <Box key={`row-${t.id}`} flexDirection="column">
+            <Button key={`task-${t.id}`} label={`${i + 1}. [${kindOf(t)}] ${t.label}`} onPress={() => press(t)} />
+            {openId === t.id && view !== null && view.id === t.id
+              ? view.note
+                ? <Text dimColor>{`     ${texts.noLog}`}</Text>
+                : view.lines.map((line, n) => <Text key={`log-${t.id}-${n}`} dimColor>{`     │ ${line}`}</Text>)
+              : null}
           </Box>
         ))}
         {hidden > 0 ? <Text dimColor>{`  … +${hidden}`}</Text> : null}

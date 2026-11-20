@@ -1,7 +1,7 @@
 {
   "name": "bg-indicator",
-  "version": "0.5.0",
-  "description": "See what is still running when Claude hands control back: a live, multilingual, unfoldable band above the prompt listing background shell commands, monitors, subagents and scheduled wake-ups",
+  "version": "0.6.0",
+  "description": "See what is still running when Claude hands control back: a live, multilingual, unfoldable band above the prompt, with the log of each background task one click away",
   "author": {
     "name": "ValentinPhB"
   },
@@ -31,7 +31,10 @@
     "wakeup",
     "expandable",
     "collapsible",
-    "typescript"
+    "typescript",
+    "logs",
+    "task-logs",
+    "output"
   ],
   "types": "./types/index.d.ts"
 }

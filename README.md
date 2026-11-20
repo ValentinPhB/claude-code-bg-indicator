@@ -11,10 +11,10 @@ still working on something?"*
 It appears the moment a tool call moves work to the background, shows the first task's description plus a `(+N)`
 counter, animates while anything runs, and disappears by itself when nothing is left. It is re-checked **every time Claude hands control back to you**, so a prompt that looks idle never hides something that is still running or scheduled to wake the session later.
 
-- Zero configuration, zero dependency, no network, no file access of its own.
+- Zero configuration, zero dependency, no network. It only reads the log files of your own background tasks.
 - Works with background Bash commands, `Monitor` tasks, background subagents and scheduled wake-ups (`ScheduleWakeup`, `/loop`).
 - Install in one line, free, MIT licensed.
-- Speaks your language: the band is localized in 18 languages and shows task descriptions in any script.
+- Press a task to read its log; the band is localized in 18 languages and shows task descriptions in any script.
 
 ## Is there a Claude Code plugin to see background tasks?
 
@@ -68,21 +68,35 @@ it permanent for every session (including the ones an IDE extension starts) by a
 }
 ```
 
-## Unfold the list
+## Unfold the list, read the logs
 
 The band shows the first task and a button with the number of tasks, `▸ 3`. Press it to see **every** background task
-(from 1 to N), one per row, with the kind the engine gives it:
+(from 1 to N), one per row, with the kind the engine gives it. **Each row is a button**: press it to read the last lines
+of that task's log right under it, press it again to hide them.
 
 ```
 ⠹ Background  Deploy the API (+2) ▾
   1. [shell] Deploy the API
+     │ building image…
+     │ pushing layer 3/7
   2. [monitor] Watch the logs
   3. [subagent] Review the diff
 ```
 
-- Scheduled wake-ups are listed too, as `[wake-up]` (one-shot) or `[recurring]` (cron, `/loop`).
+- An open log refreshes about once a second while the task runs.
+- Colour codes and control characters are stripped, and each line is clipped by terminal columns.
+- Scheduled wake-ups are listed too, as `[wake-up]` (one-shot) or `[recurring]` (cron, `/loop`). They have no log, so
+  pressing one shows its schedule and its full prompt.
 - The unfolded list shows up to 10 rows, then `… +K` for the rest, so a long list never pushes your prompt off the screen.
 - Press `▾` to fold it back. It folds itself, too, once nothing is running any more.
+
+**About the logs.** Claude Code keeps each background task's output in a file of its session's temporary folder, and the
+mod reads it from there with the file API the engine offers plugins. That layout is an implementation detail of Claude
+Code, not a documented interface: if a file cannot be found, the row says so (*No log available*, in your language)
+instead of failing.
+
+**About the "From the bg-indicator plugin" line.** Claude Code adds it itself above anything a plugin draws, so you
+always know where a piece of interface comes from. A plugin cannot remove or change it.
 
 ## Languages
 
@@ -106,14 +120,14 @@ setting, then the `LC_ALL`, `LC_MESSAGES` and `LANG` environment variables, and 
 
 ## How it works
 
-The mod is a single hooks module, [`hooks/register.tsx`](hooks/register.tsx), with no dependency and no file or network
-access of its own.
+The mod is a single hooks module, [`hooks/register.tsx`](hooks/register.tsx), with no dependency and no network access.
+It reads files only to show a task's log, and writes none.
 
 | Event | What the mod does |
 | --- | --- |
 | `classic.PostToolUse` | If the tool call started work in the background (`run_in_background: true`, or the `Monitor` tool), the task is added to the band right away. |
 | `classic.Stop` | **Every time control returns to you**, the engine lists the background work still in flight (`background_tasks`) and the wake-ups scheduled to resume the session later (`session_crons`: `ScheduleWakeup`, `/loop`, cron). That list **replaces** what the band shows, so it is the source of truth and a finished task cannot linger. A wake-up is shown with a clock: `⏰ Check the deployment`. |
-| `ui.render` on `AbovePrompt` | Draws the band (and, once unfolded, the list) when there is something to show, or lets the default prompt area through when there is not. |
+| `ui.render` on `AbovePrompt` | Draws the band (and, once unfolded, the list and the log of the task you pressed) when there is something to show, or lets the default prompt area through when there is not. |
 | `session.start` | Starts a timer that advances the spinner only while a task is shown, so an idle session is never redrawn. |
 
 Descriptions come from the task's own `description` (falling back to its command, then its type) and are clipped to 60
