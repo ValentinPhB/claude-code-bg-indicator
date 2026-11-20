@@ -5,16 +5,16 @@ are running**: shell commands started with `run_in_background`, monitors and sub
 still working on something?"*
 
 ```
-⠹ Background  Deploy the API ▸              one task: its own description
-⠹ Background Tasks (3) ▸                    several tasks: just their number
+⠹ Background  Deploy the API ▾              one task: its own description
+⠹ Background Tasks (3) ▾                    several tasks: just their number
 ```
 
 It appears the moment a tool call moves work to the background, shows the task's description when there is one task, or just `Background Tasks (N)` when there are several, animates while anything runs, and disappears by itself when nothing is left. It is re-checked **every time Claude hands control back to you**, so a prompt that looks idle never hides something that is still running or scheduled to wake the session later.
 
-- Zero configuration, zero dependency, no network. It reads the log files of your own background tasks, and only when you press `↗` does it write one small task file in your temporary folder and start `code`.
+- Zero configuration, zero dependency, no network. It reads the log files of your own background tasks, and only when you press `>_` does it write one small script in your temporary folder and open a terminal.
 - Works with background Bash commands, `Monitor` tasks, background subagents and scheduled wake-ups (`ScheduleWakeup`, `/loop`).
 - Install in one line, free, MIT licensed.
-- Press a task to read its log (with a scrollbar), or follow it in its own VS Code window; the band is localized in 18 languages and shows task descriptions in any script.
+- Unfold a task to read its log in a 10-line scrollable inset, or follow it in a terminal window; small type, and the band is localized in 18 languages and shows task descriptions in any script.
 
 ## Is there a Claude Code plugin to see background tasks?
 
@@ -70,42 +70,49 @@ it permanent for every session (including the ones an IDE extension starts) by a
 
 ## Unfold the list, read the logs
 
-**The title.** With **one** task the band names it: `⠹ Background  Deploy the API ▸`. With **several** it only says
-`⠹ Background Tasks (3) ▸`, so the title never pretends that the first task is the only one. The `▸` button unfolds the list.
+**The title.** With **one** task the band names it: `⠹ Background  Deploy the API ▾`. With **several** it only says
+`⠹ Background Tasks (3) ▾`, so the title never pretends that the first task is the only one. The `▾` button unfolds the list.
 
-Unfolded, you see **every** background task (from 1 to N), one per row, with the kind the engine gives it. **Each row is a
-button**: press it to read the last lines of that task's log right under it, press it again to hide them.
+Unfolded, you see **every** background task (from 1 to N), one per row. A row is plain text, **not** one big button: only
+the small buttons at its end are clickable, so the band stays easy to read.
 
 ```
-⠹ Background Tasks (3) ▾
-  1. [shell] Deploy the API  ↗
-     ┃ pushing layer 3/7
-     ┃ pushing layer 4/7
-     │ pushing layer 5/7
-     │ pushing layer 6/7
-     21–30 / 187 ⤓
-  2. [monitor] Watch the logs  ↗
-  3. [subagent] Review the diff  ↗
+⠹ Background Tasks (3) ▴
+1. Deploy the API ▴ >_
+   ┃ pushing layer 3/7
+   ┃ pushing layer 4/7
+   │ pushing layer 5/7
+   │ pushing layer 6/7
+   21–30 / 187  ↑ ↓ ⤓
+2. Watch the logs ▾ >_
+3. Review the diff ▾ >_
 ```
 
+- **`▾` / `▴` unfolds the log of that task** into a **10-line inset** right under its row, and folds it back. One log is open
+  at a time: opening another closes the first. (The arrows are vertical triangles on purpose: they are symmetrical, so they
+  sit in the middle of their button.)
+- **`>_` opens a terminal window** that follows the task's log (see below).
 - **A scrollbar on every open log.** The gutter to the left of the log lines is the scrollbar: the bright `┃` rows are the
   thumb (where the window stands in the log, and how much of it you see), the dim `│` rows are the track. A log that fits
   in the window has a track and no thumb.
-- **Scroll the log with the mouse wheel** (or the arrow, page, Home and End keys while the band is focused). The log shows
-  10 lines at a time out of the last 300, with a position marker such as `26–35 / 40`. While you are scrolled up the view
-  stays where you put it as new lines arrive; the `⤓` button, or scrolling back to the bottom, returns to the live end. The
-  wheel moves the open log wherever the pointer is on the band, and the rest of the band stays in place. One log is open at
-  a time: opening another closes the first.
-- **Nothing is read until you press a row.** Only the file of the row you opened is read (its last 32 KB, kept as its last
+- **Scroll the inset** with the mouse wheel, with the `↑` and `↓` buttons (five lines at a time), or with the arrow, page,
+  Home and End keys while the band is focused. The inset shows 10 lines at a time out of the last 300, with a position
+  marker such as `26–35 / 40`. While you are scrolled up the view stays where you put it as new lines arrive; `⤓`, or
+  scrolling back to the bottom, returns to the live end.
+  **The wheel only works where the host sends wheel events to plugins**; the arrow buttons always work.
+- **Nothing is read until you unfold a row.** Only the file of the row you opened is read (its last 32 KB, kept as its last
   300 lines), never the other tasks' logs, and folding the list closes the log and stops the reading. A task you never open
   costs nothing.
 - An open log is **live**: it refreshes about once a second while the task runs, so you can follow a build or a deployment as
   it prints.
-- Colour codes and control characters are stripped, and each line is clipped by terminal columns.
-- Scheduled wake-ups are listed too, as `[wake-up]` (one-shot) or `[recurring]` (cron, `/loop`). They have no log, so
-  pressing one shows its schedule and its full prompt, and they have no `↗` button.
+- **Small type, narrow band.** Everything is drawn in the host's small text sizes (`footnote` for the title and rows,
+  `caption` and a monospaced face for the log), so the band takes little room above the chat. Lines are cut to the real width
+  of the band (about 50 columns in the VS Code panel), so none wraps and the rows stay aligned.
+- Colour codes and control characters are stripped from the log, and each line is clipped by terminal columns.
+- Scheduled wake-ups are listed too. They have no log, so unfolding one shows its schedule and its full prompt, and they have
+  no `>_` button.
 - The unfolded list shows up to 10 rows, then `… +K` for the rest, so a long list never pushes your prompt off the screen.
-- Press `▾` to fold it back. It folds itself, too, once nothing is running any more.
+- Press `▴` in the title to fold the whole list back. It folds itself, too, once nothing is running any more.
 
 **About the logs.** Claude Code keeps each background task's output in a file of its session's temporary folder, and the
 mod reads it from there with the file API the engine offers plugins. That layout is an implementation detail of Claude
@@ -113,30 +120,27 @@ Code, not a documented interface. When no file is found the row says *No log ava
 the path it looked for; when the file exists but nothing was printed yet it says *Log is empty*. A task that prints
 nothing (for example a watcher that stays quiet until something happens) therefore has an empty log: that is not a bug.
 
-## Follow a log in its own VS Code window
+## Follow a log in a terminal window
 
-The `↗` button at the end of a task row opens a **new VS Code window** whose integrated terminal follows that task's log.
-It is meant for the long, noisy logs you want to keep an eye on while you carry on working.
+The `>_` button at the end of a task row opens a **terminal window** that follows that task's log, for the long, noisy logs
+you want to keep an eye on while you carry on working.
 
 What it does, step by step, and nothing more:
 
 1. It looks up the task's log file (the same file the band reads).
-2. It writes **one file**, `bg-indicator/<task id>/.vscode/tasks.json`, in your temporary folder. It holds one VS Code task
-   that starts when the folder opens and runs a fixed command: `watch -n 1 -t tail -n 80 <log>` where `watch` is installed,
-   `tail -n 200 -f <log>` where it is not (macOS has no `watch` by default).
-3. It runs `code --new-window <that folder>`.
+2. It writes **one small script**, `bg-indicator/<task id>/follow.command`, in your temporary folder. The script names the
+   window, then runs a fixed command: `watch -n 1 -t tail -n 80 <log>` where `watch` is installed, `tail -n 200 -f <log>`
+   where it is not (macOS has no `watch` by default).
+3. **macOS:** it makes the script executable and opens it with the Terminal application (`open -a Terminal`), which needs no
+   permission prompt. **Linux:** it starts the first terminal it finds (`x-terminal-emulator`, `gnome-terminal`, `konsole`,
+   `xfce4-terminal`, `xterm`), each given the script as a separate argument and never through a shell string.
 
 Good to know:
 
-- **VS Code asks once per folder before running an automatic task** ("Allow automatic tasks?"). That prompt is VS Code's own
-  protection and the mod does not try to bypass it. If you trust the mod, set `"task.allowAutomaticTasks": "on"` in your
-  *user* settings to skip it. Without it, you can also run the task by hand from the terminal menu.
-- It needs the `code` command. The mod looks in the usual places (`/opt/homebrew/bin`, `/usr/local/bin`, the macOS
-  application bundle, `/usr/bin`, `/snap/bin`), then on your `PATH`. If it cannot start VS Code it says so (*VS Code not
-  found*, in your language) and writes nothing else. It is meant for macOS and Linux.
+- If no terminal can be started the mod says so (*No terminal found*, in your language). It is meant for macOS and Linux.
 - The command is fixed and its only inputs are checked: a task id may contain only letters, digits, `_` and `-`, and the log
   path only letters, digits and `/._-`. Anything else is refused, never passed to a shell.
-- The throwaway folders live in your temporary folder and are cleaned by your system like any other temporary file.
+- The scripts live in your temporary folder and are cleaned by your system like any other temporary file.
 
 ## "From the bg-indicator plugin": why it is there and why it stays
 
@@ -176,13 +180,13 @@ setting, then the `LC_ALL`, `LC_MESSAGES` and `LANG` environment variables, and 
 ## How it works
 
 The mod is a single hooks module, [`hooks/register.tsx`](hooks/register.tsx), with no dependency and no network access.
-It reads files to show a task's log, and writes a file only when you press `↗` (the VS Code task described above).
+It reads files to show a task's log, and writes a file only when you press `>_` (the terminal script described above).
 
 | Event | What the mod does |
 | --- | --- |
 | `classic.PostToolUse` | If the tool call started work in the background (`run_in_background: true`, or the `Monitor` tool), the task is added to the band right away. |
 | `classic.Stop` | **Every time control returns to you**, the engine lists the background work still in flight (`background_tasks`) and the wake-ups scheduled to resume the session later (`session_crons`: `ScheduleWakeup`, `/loop`, cron). That list **replaces** what the band shows, so it is the source of truth and a finished task cannot linger. A wake-up is shown with a clock: `⏰ Check the deployment`. |
-| `ui.render` on `AbovePrompt` | Draws the band (and, once unfolded, the list and the log of the task you pressed) when there is something to show, or lets the default prompt area through when there is not. |
+| `ui.render` on `AbovePrompt` | Draws the band (and, once unfolded, the list and the log of the task you opened) when there is something to show, or lets the default prompt area through when there is not. |
 | `session.start` | Starts a timer that advances the spinner only while a task is shown, so an idle session is never redrawn. |
 
 Descriptions come from the task's own `description` (falling back to its command, then its type) and are clipped to 60

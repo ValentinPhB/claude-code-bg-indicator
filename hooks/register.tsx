@@ -25,27 +25,33 @@ const LOG_BYTES = 32768
 // The only text the mod writes itself is a few short phrases. Task descriptions come from the
 // session and are shown as they are, in any script. To add a language, add a line to
 // MESSAGES (key = lowercase language code) and one to ALIASES.
-export type Texts = { background: string; tasks: string; noLog: string; empty: string; noCode: string }
+export type Texts = {
+  background: string
+  tasks: string
+  noLog: string
+  empty: string
+  noTerminal: string
+}
 
 const MESSAGES: Record<string, Texts> = {
-  en: { background: 'Background', tasks: 'Background Tasks', noLog: 'No log available', empty: 'Log is empty', noCode: 'VS Code not found' },
-  fr: { background: 'Arrière-plan', tasks: 'Tâches en arrière-plan', noLog: 'Aucun journal disponible', empty: 'Journal vide', noCode: 'VS Code introuvable' },
-  es: { background: 'Segundo plano', tasks: 'Tareas en segundo plano', noLog: 'Sin registro disponible', empty: 'Registro vacío', noCode: 'VS Code no encontrado' },
-  de: { background: 'Hintergrund', tasks: 'Hintergrundaufgaben', noLog: 'Kein Protokoll verfügbar', empty: 'Protokoll ist leer', noCode: 'VS Code nicht gefunden' },
-  pt: { background: 'Segundo plano', tasks: 'Tarefas em segundo plano', noLog: 'Nenhum registro disponível', empty: 'Registro vazio', noCode: 'VS Code não encontrado' },
-  it: { background: 'In background', tasks: 'Attività in background', noLog: 'Nessun log disponibile', empty: 'Log vuoto', noCode: 'VS Code non trovato' },
-  nl: { background: 'Op de achtergrond', tasks: 'Achtergrondtaken', noLog: 'Geen log beschikbaar', empty: 'Log is leeg', noCode: 'VS Code niet gevonden' },
-  pl: { background: 'W tle', tasks: 'Zadania w tle', noLog: 'Brak dziennika', empty: 'Dziennik jest pusty', noCode: 'Nie znaleziono VS Code' },
-  sv: { background: 'Bakgrund', tasks: 'Bakgrundsuppgifter', noLog: 'Ingen logg tillgänglig', empty: 'Loggen är tom', noCode: 'VS Code hittades inte' },
-  tr: { background: 'Arka plan', tasks: 'Arka plan görevleri', noLog: 'Günlük yok', empty: 'Günlük boş', noCode: 'VS Code bulunamadı' },
-  ru: { background: 'Фон', tasks: 'Фоновые задачи', noLog: 'Журнал недоступен', empty: 'Журнал пуст', noCode: 'VS Code не найден' },
-  uk: { background: 'Фон', tasks: 'Фонові завдання', noLog: 'Журнал недоступний', empty: 'Журнал порожній', noCode: 'VS Code не знайдено' },
-  ja: { background: 'バックグラウンド', tasks: 'バックグラウンドタスク', noLog: 'ログはありません', empty: 'ログは空です', noCode: 'VS Code が見つかりません' },
-  zh: { background: '后台', tasks: '后台任务', noLog: '没有可用日志', empty: '日志为空', noCode: '未找到 VS Code' },
-  'zh-tw': { background: '背景', tasks: '背景任務', noLog: '沒有可用的記錄', empty: '記錄是空的', noCode: '找不到 VS Code' },
-  ko: { background: '백그라운드', tasks: '백그라운드 작업', noLog: '사용 가능한 로그가 없습니다', empty: '로그가 비어 있습니다', noCode: 'VS Code를 찾을 수 없습니다' },
-  vi: { background: 'Nền', tasks: 'Tác vụ nền', noLog: 'Không có nhật ký', empty: 'Nhật ký trống', noCode: 'Không tìm thấy VS Code' },
-  id: { background: 'Latar belakang', tasks: 'Tugas latar belakang', noLog: 'Log tidak tersedia', empty: 'Log kosong', noCode: 'VS Code tidak ditemukan' },
+  en: { background: 'Background', tasks: 'Background Tasks', noLog: 'No log available', empty: 'Log is empty', noTerminal: 'No terminal found' },
+  fr: { background: 'Arrière-plan', tasks: 'Tâches en arrière-plan', noLog: 'Aucun journal disponible', empty: 'Journal vide', noTerminal: 'Aucun terminal trouvé' },
+  es: { background: 'Segundo plano', tasks: 'Tareas en segundo plano', noLog: 'Sin registro disponible', empty: 'Registro vacío', noTerminal: 'No se encontró un terminal' },
+  de: { background: 'Hintergrund', tasks: 'Hintergrundaufgaben', noLog: 'Kein Protokoll verfügbar', empty: 'Protokoll ist leer', noTerminal: 'Kein Terminal gefunden' },
+  pt: { background: 'Segundo plano', tasks: 'Tarefas em segundo plano', noLog: 'Nenhum registro disponível', empty: 'Registro vazio', noTerminal: 'Nenhum terminal encontrado' },
+  it: { background: 'In background', tasks: 'Attività in background', noLog: 'Nessun log disponibile', empty: 'Log vuoto', noTerminal: 'Nessun terminale trovato' },
+  nl: { background: 'Op de achtergrond', tasks: 'Achtergrondtaken', noLog: 'Geen log beschikbaar', empty: 'Log is leeg', noTerminal: 'Geen terminal gevonden' },
+  pl: { background: 'W tle', tasks: 'Zadania w tle', noLog: 'Brak dziennika', empty: 'Dziennik jest pusty', noTerminal: 'Nie znaleziono terminala' },
+  sv: { background: 'Bakgrund', tasks: 'Bakgrundsuppgifter', noLog: 'Ingen logg tillgänglig', empty: 'Loggen är tom', noTerminal: 'Ingen terminal hittades' },
+  tr: { background: 'Arka plan', tasks: 'Arka plan görevleri', noLog: 'Günlük yok', empty: 'Günlük boş', noTerminal: 'Terminal bulunamadı' },
+  ru: { background: 'Фон', tasks: 'Фоновые задачи', noLog: 'Журнал недоступен', empty: 'Журнал пуст', noTerminal: 'Терминал не найден' },
+  uk: { background: 'Фон', tasks: 'Фонові завдання', noLog: 'Журнал недоступний', empty: 'Журнал порожній', noTerminal: 'Термінал не знайдено' },
+  ja: { background: 'バックグラウンド', tasks: 'バックグラウンドタスク', noLog: 'ログはありません', empty: 'ログは空です', noTerminal: 'ターミナルが見つかりません' },
+  zh: { background: '后台', tasks: '后台任务', noLog: '没有可用日志', empty: '日志为空', noTerminal: '未找到终端' },
+  'zh-tw': { background: '背景', tasks: '背景任務', noLog: '沒有可用的記錄', empty: '記錄是空的', noTerminal: '找不到終端機' },
+  ko: { background: '백그라운드', tasks: '백그라운드 작업', noLog: '사용 가능한 로그가 없습니다', empty: '로그가 비어 있습니다', noTerminal: '터미널을 찾을 수 없습니다' },
+  vi: { background: 'Nền', tasks: 'Tác vụ nền', noLog: 'Không có nhật ký', empty: 'Nhật ký trống', noTerminal: 'Không tìm thấy terminal' },
+  id: { background: 'Latar belakang', tasks: 'Tugas latar belakang', noLog: 'Log tidak tersedia', empty: 'Log kosong', noTerminal: 'Terminal tidak ditemukan' },
 }
 
 // A code matches alone or followed by a separator (fr, fr_FR.UTF-8, fr-CA); a name matches as a prefix.
@@ -90,7 +96,7 @@ const FALLBACK: Texts = {
   tasks: 'Background Tasks',
   noLog: 'No log available',
   empty: 'Log is empty',
-  noCode: 'VS Code not found',
+  noTerminal: 'No terminal found',
 }
 
 export const textsFor = (language: string): Texts => MESSAGES[language] ?? MESSAGES['en'] ?? FALLBACK
@@ -201,10 +207,10 @@ export const scrollbar = (total: number, size: number, start: number, rows: numb
   return Array.from({ length: rows }, (_, i) => i >= at && i < at + thumb)
 }
 
-// ── Open a task's log in its own VS Code window ─────────────────────────────
-// A throwaway folder holds one VS Code task that runs when the folder opens and follows the log with `watch`
-// (or `tail -f` where `watch` is not installed). Only a task id made of letters, digits, `_` and `-` and a
-// file path made of letters, digits and `/._-` ever reach the command, and the command is fixed.
+// ── Open a task's log in a terminal window ───────────────────────────────────
+// A terminal window runs a fixed command that follows the log with `watch` (or `tail -f` where `watch` is not
+// installed). Only a task id made of letters, digits, `_` and `-` and a file path made of letters, digits and `/._-`
+// ever reach the command, and the command is fixed.
 
 export const isSafeId = (id: string) => /^[A-Za-z0-9_-]{1,64}$/.test(id)
 
@@ -216,35 +222,18 @@ const quote = (text: string) => `'${text.replace(/'/g, `'\\''`)}'`
 export const followCommand = (file: string) =>
   `if command -v watch >/dev/null 2>&1; then exec watch -n 1 -t tail -n 80 ${quote(file)}; else exec tail -n 200 -f ${quote(file)}; fi`
 
-/** The `.vscode/tasks.json` of the throwaway folder: one terminal task that starts as the folder opens. */
-export const tasksJson = (title: string, command: string) =>
-  JSON.stringify(
-    {
-      version: '2.0.0',
-      tasks: [
-        {
-          label: `bg-indicator: ${title}`,
-          type: 'shell',
-          command,
-          isBackground: true,
-          problemMatcher: [],
-          presentation: { reveal: 'always', panel: 'dedicated', focus: false, clear: true, showReuseMessage: false },
-          runOptions: { runOn: 'folderOpen' },
-        },
-      ],
-    },
-    null,
-    2,
-  )
+/** The script a terminal window runs to follow a log: it names the window, then follows the file. */
+export const followScript = (title: string, file: string) =>
+  `#!/bin/sh\nprintf '\\033]0;%s\\007' ${quote(title)}\n${followCommand(file)}\n`
 
-/** Where the `code` command usually is; the bare name is tried last, for a `PATH` that has it. */
-const CODE_CLIS = [
-  '/opt/homebrew/bin/code',
-  '/usr/local/bin/code',
-  '/Applications/Visual Studio Code.app/Contents/Resources/app/bin/code',
-  '/usr/bin/code',
-  '/snap/bin/code',
-] as const
+/** Terminals of a Linux desktop and the arguments that make each one run a script, tried in this order. */
+export const LINUX_TERMINALS: readonly { path: string; args: (script: string) => string[] }[] = [
+  { path: '/usr/bin/x-terminal-emulator', args: script => ['-e', 'sh', script] },
+  { path: '/usr/bin/gnome-terminal', args: script => ['--', 'sh', script] },
+  { path: '/usr/bin/konsole', args: script => ['-e', 'sh', script] },
+  { path: '/usr/bin/xfce4-terminal', args: script => ['-e', `sh ${script}`] },
+  { path: '/usr/bin/xterm', args: script => ['-e', 'sh', script] },
+]
 
 /** The only task whose log is read on a tick: the one the user opened, and only while the list is unfolded. */
 export const refreshTarget = (isOpen: boolean, viewingId: string | null, list: readonly Task[]) =>
@@ -301,8 +290,8 @@ const logOf = async ($: EngineInterface, task: Task): Promise<LogView> => {
   return { id: task.id, lines, note: lines.length === 0 ? 'empty' : null, tried }
 }
 
-/** Opens a new VS Code window whose terminal follows the task's log. */
-const openWindow = async ($: EngineInterface, task: Task, texts: Texts) => {
+/** Opens a terminal window that follows the task's log: Terminal on macOS, the first terminal found on Linux. */
+const openTerminal = async ($: EngineInterface, task: Task, texts: Texts) => {
   if (!isSafeId(task.id) || task.detail !== undefined) {
     await $.ui.toast(texts.noLog)
     return
@@ -313,17 +302,23 @@ const openWindow = async ($: EngineInterface, task: Task, texts: Texts) => {
     return
   }
   const root = (await $.fs.exists(ROOTS[0]).catch(() => false)) ? ROOTS[0] : ROOTS[1]
-  const dir = `${root}/bg-indicator/${task.id}`
-  await $.fs.write(`${dir}/.vscode/tasks.json`, tasksJson(task.label, followCommand(file)))
-  let code: string = 'code'
-  for (const candidate of CODE_CLIS) {
-    if (await $.fs.exists(candidate).catch(() => false)) {
-      code = candidate
-      break
-    }
+  const script = `${root}/bg-indicator/${task.id}/follow.command`
+  await $.fs.write(script, followScript(task.label, file))
+  if (await $.fs.exists('/usr/bin/open').catch(() => false)) {
+    await $.process.run(['/bin/chmod', '755', script]).catch(() => undefined)
+    const result = await $.process.run(['/usr/bin/open', '-a', 'Terminal', script], { timeoutMs: 20000 }).catch(() => undefined)
+    if (result === undefined || result.exitCode !== 0) await $.ui.toast(texts.noTerminal)
+    return
   }
-  const result = await $.process.run([code, '--new-window', dir], { timeoutMs: 20000 }).catch(() => undefined)
-  if (result === undefined || result.exitCode !== 0) await $.ui.toast(texts.noCode)
+  for (const terminal of LINUX_TERMINALS) {
+    if (!(await $.fs.exists(terminal.path).catch(() => false))) continue
+    // `sh -c` takes the terminal and its arguments as separate words: nothing is spliced into the shell text.
+    const started = await $.process
+      .run(['sh', '-c', 'nohup "$0" "$@" >/dev/null 2>&1 &', terminal.path, ...terminal.args(script)], { timeoutMs: 20000 })
+      .catch(() => undefined)
+    if (started !== undefined && started.exitCode === 0) return
+  }
+  await $.ui.toast(texts.noTerminal)
 }
 
 export const register: Register = on => {
@@ -426,6 +421,10 @@ export const register: Register = on => {
     const single = list.length === 1
     const shown = list.slice(0, MAX_ROWS)
     const hidden = list.length - shown.length
+    // The band is narrow (about 50 columns in VS Code): every line is cut to fit, so none wraps and the rows stay aligned.
+    const columns = e.props.bodyColumns
+    const labelWidth = Math.max(12, columns - 16)
+    const lineWidth = Math.max(16, columns - 8)
 
     // Folding the list closes the open log too, so nothing keeps being read behind a folded band.
     const flip = async (wasOpen: boolean) => {
@@ -440,12 +439,16 @@ export const register: Register = on => {
     // One task: its own description. Several: just their number, the list is one press away.
     const header = (
       <Box>
-        <Text color="yellow">{FRAMES[f] ?? FRAMES[0]} </Text>
+        <Text color="yellow" size="footnote">{FRAMES[f] ?? FRAMES[0]} </Text>
         {single
-          ? <Text bold color="yellow">{texts.background}{' '}</Text>
-          : <Text bold color="yellow">{texts.tasks}{' '}</Text>}
-        {single ? <Text>{first.label}{' '}</Text> : <Text>{`(${list.length})`}{' '}</Text>}
-        <Button key="toggle" label={isOpen ? '▾' : '▸'} onPress={() => flip(isOpen)} />
+          ? <Text bold color="yellow" size="footnote">{texts.background}{' '}</Text>
+          : <Text bold color="yellow" size="footnote">{texts.tasks}{' '}</Text>}
+        {single
+          ? <Text size="footnote">{clip(first.label, Math.max(12, columns - 22))}{' '}</Text>
+          : <Text size="footnote">{`(${list.length})`}{' '}</Text>}
+        <Button key="toggle" label={isOpen ? '▴' : '▾'} onPress={() => flip(isOpen)}>
+          <Text size="footnote">{isOpen ? '▴' : '▾'}</Text>
+        </Button>
       </Box>
     )
 
@@ -453,7 +456,7 @@ export const register: Register = on => {
       return header
     }
 
-    // Pressing a row shows (or hides) the last lines of its log right under it.
+    // Pressing the fold button of a row shows (or hides) the last lines of its log right under it.
     const press = async (task: Task) => {
       await update($, logTop, () => null)
       if ((await read($, viewing)) === task.id) {
@@ -466,6 +469,11 @@ export const register: Register = on => {
       await update($, log, () => loaded)
     }
 
+    // The two arrows move the open log by a few lines, like the wheel does where the host sends it.
+    const move = async (by: number, total: number) => {
+      await update($, logTop, current => scrollTop(total, LOG_WINDOW, current, by))
+    }
+
     return (
       <Box flexDirection="column">
         {header}
@@ -473,38 +481,58 @@ export const register: Register = on => {
           const log_ = openId === t.id && view !== null && view.id === t.id ? view : null
           const range = log_ === null ? null : visibleRange(log_.lines.length, LOG_WINDOW, top)
           const thumb = log_ === null || range === null ? [] : scrollbar(log_.lines.length, LOG_WINDOW, range.start, range.end - range.start)
+          const marker = log_ !== null && range !== null && log_.note === null && log_.lines.length > LOG_WINDOW
 
           return (
             <Box key={`row-${t.id}`} flexDirection="column">
               <Box>
-                <Button key={`task-${t.id}`} label={`${i + 1}. [${kindOf(t)}] ${t.label}`} onPress={() => press(t)} />
-                {t.detail === undefined ? <Text> </Text> : null}
-                {t.detail === undefined ? <Button key={`open-${t.id}`} label="↗" onPress={() => openWindow($, t, texts)} /> : null}
+                <Text size="footnote">{`${i + 1}. ${clip(t.label, labelWidth)} `}</Text>
+                <Button key={`task-${t.id}`} label={openId === t.id ? '▴' : '▾'} onPress={() => press(t)}>
+                  <Text size="footnote">{openId === t.id ? '▴' : '▾'}</Text>
+                </Button>
+                {t.detail === undefined ? <Text size="footnote"> </Text> : null}
+                {t.detail === undefined ? (
+                  <Button key={`term-${t.id}`} label=">_" onPress={() => openTerminal($, t, texts)}>
+                    <Text size="footnote">{'>_'}</Text>
+                  </Button>
+                ) : null}
               </Box>
               {log_ !== null && range !== null ? (
                 <Box flexDirection="column">
                   {log_.note === null
                     ? log_.lines.slice(range.start, range.end).map((line, n) => (
                         <Box key={`log-${t.id}-${n}`}>
-                          <Text dimColor>{'     '}</Text>
-                          {thumb[n] === true ? <Text color="cyan">┃</Text> : <Text dimColor>│</Text>}
-                          <Text dimColor>{` ${line}`}</Text>
+                          <Text dimColor size="caption" mono>{'   '}</Text>
+                          {thumb[n] === true ? <Text color="cyan" size="caption" mono>┃</Text> : <Text dimColor size="caption" mono>│</Text>}
+                          <Text dimColor size="caption" mono>{` ${clip(line, lineWidth)}`}</Text>
                         </Box>
                       ))
-                    : <Text dimColor>{`     ${log_.note === 'empty' ? texts.empty : texts.noLog}`}</Text>}
-                  {log_.note === null && log_.lines.length > LOG_WINDOW ? (
+                    : <Text dimColor size="caption">{`   ${log_.note === 'empty' ? texts.empty : texts.noLog}`}</Text>}
+                  {marker && range !== null ? (
                     <Box>
-                      <Text dimColor>{`     ${range.start + 1}–${range.end} / ${log_.lines.length} `}</Text>
-                      {top !== null ? <Button key="follow" label="⤓" onPress={() => update($, logTop, () => null)} /> : null}
+                      <Text dimColor size="caption">{`   ${range.start + 1}–${range.end} / ${log_.lines.length} `}</Text>
+                      <Button key="up" label="↑" onPress={() => move(-5, log_.lines.length)}>
+                        <Text size="caption">↑</Text>
+                      </Button>
+                      <Text size="caption"> </Text>
+                      <Button key="down" label="↓" onPress={() => move(5, log_.lines.length)}>
+                        <Text size="caption">↓</Text>
+                      </Button>
+                      {top !== null ? <Text size="caption"> </Text> : null}
+                      {top !== null ? (
+                        <Button key="follow" label="⤓" onPress={() => update($, logTop, () => null)}>
+                          <Text size="caption">⤓</Text>
+                        </Button>
+                      ) : null}
                     </Box>
                   ) : null}
-                  {log_.note === 'none' && log_.tried !== null ? <Text dimColor>{`     → ${clip(log_.tried, LOG_WIDTH)}`}</Text> : null}
+                  {log_.note === 'none' && log_.tried !== null ? <Text dimColor size="caption">{`   → ${clip(log_.tried, lineWidth)}`}</Text> : null}
                 </Box>
               ) : null}
             </Box>
           )
         })}
-        {hidden > 0 ? <Text dimColor>{`  … +${hidden}`}</Text> : null}
+        {hidden > 0 ? <Text dimColor size="caption">{`  … +${hidden}`}</Text> : null}
       </Box>
     )
   })

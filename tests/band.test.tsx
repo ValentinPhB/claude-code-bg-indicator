@@ -5,10 +5,12 @@ import type { On } from 'claude-code'
 import {
   clip,
   followCommand,
+  followScript,
   isSafeId,
   isSafePath,
   kindOf,
   kindOfTool,
+  LINUX_TERMINALS,
   outputPath,
   pickLanguage,
   projectKey,
@@ -17,7 +19,6 @@ import {
   scrollbar,
   scrollTop,
   tailLines,
-  tasksJson,
   textsFor,
   visibleRange,
   wordFor,
@@ -99,7 +100,7 @@ test('with one task the title is "Background" and the task itself', async ($, on
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: /^Background/ }))?.text).toBe('Background ')
   expect((await ui.find({ type: 'Text', text: /Deploy the API/ }))?.text).toBe('Deploy the API ')
-  expect((await ui.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▸')
+  expect((await ui.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▾')
   await ui.unmount()
 })
 
@@ -115,7 +116,7 @@ test('with several tasks the title is only "Background Tasks" and their number',
   expect((await ui.find({ type: 'Text', text: /Background Tasks/ }))?.text).toBe('Background Tasks ')
   expect((await ui.find({ type: 'Text', text: /\(3\)/ }))?.text).toBe('(3) ')
   expect(await ui.find({ type: 'Text', text: /Deploy the API/ })).toBeUndefined()
-  expect((await ui.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▸')
+  expect((await ui.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▾')
   await ui.unmount()
 })
 
@@ -198,7 +199,7 @@ test('the language comes from the Claude Code setting, then the locale variables
 test('every language has every phrase', () => {
   for (const code of ['en', 'fr', 'es', 'de', 'pt', 'it', 'nl', 'pl', 'sv', 'tr', 'ru', 'uk', 'ja', 'zh', 'zh-tw', 'ko', 'vi', 'id']) {
     const texts = textsFor(code)
-    for (const phrase of [texts.background, texts.tasks, texts.noLog, texts.empty, texts.noCode]) {
+    for (const phrase of [texts.background, texts.tasks, texts.noLog, texts.empty, texts.noTerminal]) {
       expect(phrase.length).toBeGreaterThan(0)
     }
   }
@@ -268,16 +269,23 @@ test('pressing the button unfolds the whole list, with the kind of each task, an
 
   await toggle($)
   const open = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await open.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▾')
-  expect((await open.find({ type: 'Button', text: /1\. \[shell\]/ }))?.text).toBe('1. [shell] Deploy the API')
-  expect((await open.find({ type: 'Button', text: /2\. \[monitor\]/ }))?.text).toBe('2. [monitor] Watch the logs')
-  expect((await open.find({ type: 'Button', text: /3\. \[subagent\]/ }))?.text).toBe('3. [subagent] Review the diff')
+  expect((await open.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▴')
+  const rows = (await open.findAll({ type: 'Text', text: /^\d+\. / })).map(t => t.text)
+  expect(rows).toEqual(['1. Deploy the API ', '2. Watch the logs ', '3. Review the diff '])
+  // The row is plain text: no kind in braces, and only the small buttons are clickable.
+  expect(await open.find({ type: 'Text', text: /\[shell\]|\[monitor\]/ })).toBeUndefined()
+  expect(await open.find({ type: 'Button', text: /Deploy the API/ })).toBeUndefined()
+  expect((await open.find({ type: 'Button', key: 'task-id0' }))?.text).toBe('▾')
+  expect((await open.find({ type: 'Button', key: 'term-id1' }))?.text).toBe('>_')
+  // There is no VS Code window button any more: the terminal button is the only way to follow a log outside the band.
+  expect(await open.find({ type: 'Button', key: 'open-id2' })).toBeUndefined()
   await $.ui.press(TOGGLE)
   await open.unmount()
 
   const folded = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await folded.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▸')
-  expect(await folded.find({ type: 'Button', text: /Review the diff/ })).toBeUndefined()
+  expect((await folded.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▾')
+  expect(await folded.find({ type: 'Text', text: /Review the diff/ })).toBeUndefined()
+  expect(await folded.find({ type: 'Button', key: 'task-id0' })).toBeUndefined()
   await folded.unmount()
 })
 
@@ -287,7 +295,8 @@ test('a single task can be unfolded too', async ($, on) => {
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Button', text: /1\. \[shell\]/ }))?.text).toBe('1. [shell] Only one')
+  expect((await ui.find({ type: 'Text', text: /^1\. Only one/ }))?.text).toBe('1. Only one ')
+  expect((await ui.find({ type: 'Button', key: 'task-id0' }))?.text).toBe('▾')
   await ui.unmount()
 })
 
@@ -300,7 +309,7 @@ test('a long list is capped and the rest is summarised', async ($, on) => {
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect(await ui.findAll({ type: 'Button', text: /\[shell\]/ })).toHaveLength(10)
+  expect(await ui.findAll({ type: 'Text', text: /^\d+\. Job/ })).toHaveLength(10)
   expect((await ui.find({ type: 'Text', text: /… \+4/ }))?.text).toBe('  … +4')
   expect((await ui.find({ type: 'Text', text: /\(14\)/ }))?.text).toBe('(14) ')
   await ui.unmount()
@@ -314,11 +323,11 @@ test('the list folds itself when nothing runs any more', async ($, on) => {
   await stopWith($, [{ type: 'shell', text: 'Another job' }])
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▸')
+  expect((await ui.find({ type: 'Button', key: 'toggle' }))?.text).toBe('▾')
   await ui.unmount()
 })
 
-test('a scheduled wake-up is listed with its own kind', async ($, on) => {
+test('a scheduled wake-up is listed, with its own fold button and no terminal button', async ($, on) => {
   on('classic.Stop', () => ({}))
   await $.classic.Stop({
     stop_hook_active: false,
@@ -331,8 +340,11 @@ test('a scheduled wake-up is listed with its own kind', async ($, on) => {
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect(await ui.find({ type: 'Button', text: /\[wake-up\]/ })).toBeDefined()
-  expect(await ui.find({ type: 'Button', text: /\[recurring\]/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /⏰ Resume the migration/ })).toBeDefined()
+  expect(await ui.find({ type: 'Text', text: /⏰ Poll the queue/ })).toBeDefined()
+  // A wake-up can be unfolded to read its schedule, but has no log to follow in a terminal.
+  expect(await ui.find({ type: 'Button', key: 'task-w' })).toBeDefined()
+  expect(await ui.find({ type: 'Button', text: '>_' })).toBeUndefined()
   await ui.unmount()
 })
 
@@ -390,7 +402,7 @@ test('a task without a log file says so, in the language of the user', async ($,
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /Aucun journal/ }))?.text).toBe('     Aucun journal disponible')
+  expect((await ui.find({ type: 'Text', text: /Aucun journal/ }))?.text).toBe('   Aucun journal disponible')
   await ui.unmount()
 })
 
@@ -426,10 +438,10 @@ test('a missing file shows where it was looked for; an empty file says it is emp
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: /→/ }))?.text).toBe(
-    '     → /private/tmp/claude-1000/-work-app/sess1/tasks/id0.output',
+    '   → /private/tmp/claude-1000/-work-app/sess1/tasks/id0.output',
   )
   await $.ui.press({ plugin: 'bg-indicator', key: 'task-id1', surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /Log is empty/ }))?.text).toBe('     Log is empty')
+  expect((await ui.find({ type: 'Text', text: /Log is empty/ }))?.text).toBe('   Log is empty')
   expect(await ui.find({ type: 'Text', text: /→/ })).toBeUndefined()
   await ui.unmount()
 })
@@ -517,12 +529,12 @@ test('the mouse wheel scrolls the open log, the follow button returns to the liv
   const first = async () => (await gutter(ui))[0]
 
   expect(await gutter(ui)).toEqual(Array.from({ length: 10 }, (_, i) => ` line ${31 + i}`))
-  expect((await ui.find({ type: 'Text', text: /\/ 40/ }))?.text).toBe('     31–40 / 40 ')
+  expect((await ui.find({ type: 'Text', text: /\/ 40/ }))?.text).toBe('   31–40 / 40 ')
   expect(await ui.find({ type: 'Button', key: 'follow' })).toBeUndefined()
 
   await wheel($, -5)
   expect(await first()).toBe(' line 26')
-  expect((await ui.find({ type: 'Text', text: /\/ 40/ }))?.text).toBe('     26–35 / 40 ')
+  expect((await ui.find({ type: 'Text', text: /\/ 40/ }))?.text).toBe('   26–35 / 40 ')
   expect(await ui.find({ type: 'Button', key: 'follow' })).toBeDefined()
 
   await wheel($, -100)
@@ -585,8 +597,6 @@ test('the wheel does nothing while no log is open', async ($, on) => {
   await ui.unmount()
 })
 
-// ── Open a task's log in a VS Code window ────────────────────────────────────
-
 test('only safe ids and paths reach the command that follows a log', () => {
   expect(isSafeId('b2m2lndv3')).toBe(true)
   expect(isSafeId('task_1-a')).toBe(true)
@@ -606,24 +616,27 @@ test('the terminal follows the log with watch, or tail -f where watch is missing
   expect(command).toContain("exec tail -n 200 -f '/tmp/x/tasks/b1.output'")
 })
 
-test('the throwaway folder holds one VS Code task that starts when the folder opens', () => {
-  const json = JSON.parse(tasksJson('Deploy "the" API', 'echo hi')) as {
-    version: string
-    tasks: { label: string; command: string; type: string; isBackground: boolean; runOptions: { runOn: string }; presentation: { reveal: string } }[]
-  }
-  expect(json.version).toBe('2.0.0')
-  expect(json.tasks).toHaveLength(1)
-  expect(json.tasks[0]?.label).toBe('bg-indicator: Deploy "the" API')
-  expect(json.tasks[0]?.command).toBe('echo hi')
-  expect(json.tasks[0]?.type).toBe('shell')
-  expect(json.tasks[0]?.isBackground).toBe(true)
-  expect(json.tasks[0]?.runOptions.runOn).toBe('folderOpen')
-  expect(json.tasks[0]?.presentation.reveal).toBe('always')
+// ── Open a task's log in a terminal window ───────────────────────────────────
+
+test('the terminal script names the window, then follows the log', () => {
+  const script = followScript('Deploy the API', '/tmp/x/tasks/b1.output')
+  expect(script.startsWith('#!/bin/sh\n')).toBe(true)
+  expect(script).toContain("printf '\\033]0;%s\\007' 'Deploy the API'")
+  expect(script).toContain("exec watch -n 1 -t tail -n 80 '/tmp/x/tasks/b1.output'")
+  // A title with a quote cannot break out of its quotes.
+  expect(followScript("it's", '/tmp/a.output')).toContain("'it'\\''s'")
 })
 
-const openRow = { plugin: 'bg-indicator', key: 'open-id0', surface: 'terminal' } as const
+test('every Linux terminal is started with the script as a separate word', () => {
+  for (const terminal of LINUX_TERMINALS) {
+    expect(terminal.path.startsWith('/usr/bin/')).toBe(true)
+    expect(terminal.args('/tmp/s.command').join(' ')).toContain('/tmp/s.command')
+  }
+})
 
-test('the arrow button opens a new VS Code window whose terminal follows the log', async ($, on) => {
+const termRow = { plugin: 'bg-indicator', key: 'term-id0', surface: 'terminal' } as const
+
+test('the terminal button opens a Terminal window that follows the log (macOS)', async ($, on) => {
   const written: { path: string; text: string }[] = []
   const ran: string[][] = []
   on('classic.Stop', () => ({}))
@@ -641,23 +654,63 @@ test('the arrow button opens a new VS Code window whose terminal follows the log
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  await $.ui.press(openRow)
+  await $.ui.press(termRow)
   await ui.unmount()
 
+  const script = '/private/tmp/bg-indicator/id0/follow.command'
   expect(written).toHaveLength(1)
-  expect(written[0]?.path).toBe('/private/tmp/bg-indicator/id0/.vscode/tasks.json')
-  expect(written[0]?.text).toContain("exec watch -n 1 -t tail -n 80 '/private/tmp/claude-1000/-work-app/sess1/tasks/id0.output'")
-  expect(written[0]?.text).toContain('folderOpen')
-  expect(ran).toEqual([['/opt/homebrew/bin/code', '--new-window', '/private/tmp/bg-indicator/id0']])
+  expect(written[0]?.path).toBe(script)
+  expect(written[0]?.text).toContain("tail -n 80 '/private/tmp/claude-1000/-work-app/sess1/tasks/id0.output'")
+  expect(ran).toEqual([
+    ['/bin/chmod', '755', script],
+    ['/usr/bin/open', '-a', 'Terminal', script],
+  ])
 })
 
-test('when VS Code cannot be started the user is told, in their language', async ($, on) => {
+test('on Linux the first terminal found is started without a shell string', async ($, on) => {
+  const ran: string[][] = []
+  on('classic.Stop', () => ({}))
+  session(on)
+  on('fs.list', () => ({ value: [dir('claude-1000')] }))
+  on('fs.stat', () => ({ value: { kind: 'file' as const, size: 2, mtimeMs: 0, isLink: false } }))
+  on('fs.read', () => ({ value: 'x\n' }))
+  // No `open`; only gnome-terminal among the terminals; everything else exists.
+  on('fs.exists', (_, e) => ({ value: e.path !== '/usr/bin/open' && !e.path.includes('/usr/bin/x-terminal-emulator') }))
+  on('fs.write', () => ({ value: undefined }))
+  on('process.run', (_, e) => {
+    ran.push([...e.argv])
+    return exited(0)
+  })
+  await stopWith($, [{ type: 'shell', text: 'Deploy' }])
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press(termRow)
+  await ui.unmount()
+
+  expect(ran).toEqual([
+    [
+      'sh',
+      '-c',
+      'nohup "$0" "$@" >/dev/null 2>&1 &',
+      '/usr/bin/gnome-terminal',
+      '--',
+      'sh',
+      '/private/tmp/bg-indicator/id0/follow.command',
+    ],
+  ])
+})
+
+test('when no terminal can be started the user is told, in their language', async ($, on) => {
   const toasts: string[] = []
   on('classic.Stop', () => ({}))
   session(on)
-  logFiles(on, 'x\n')
+  on('fs.list', () => ({ value: [dir('claude-1000')] }))
+  on('fs.stat', () => ({ value: { kind: 'file' as const, size: 2, mtimeMs: 0, isLink: false } }))
+  on('fs.read', () => ({ value: 'x\n' }))
+  on('fs.exists', (_, e) => ({ value: e.path.endsWith('.output') || e.path === '/private/tmp' }))
   on('fs.write', () => ({ value: undefined }))
-  on('process.run', () => exited(127, 'not found'))
+  on('process.run', () => exited(1))
   on('ui.toast', (_, e) => {
     toasts.push(e.text)
     return { value: undefined }
@@ -666,15 +719,14 @@ test('when VS Code cannot be started the user is told, in their language', async
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  await $.ui.press(openRow)
+  await $.ui.press(termRow)
   await ui.unmount()
-  expect(toasts).toEqual(['VS Code not found'])
+  expect(toasts).toEqual(['No terminal found'])
 })
 
-test('nothing is written or started when the task has no log file', async ($, on) => {
-  const written: string[] = []
+test('no terminal is started for a task without a log file or with an unsafe id', async ($, on) => {
   const ran: string[][] = []
-  const toasts: string[] = []
+  const written: string[] = []
   on('classic.Stop', () => ({}))
   session(on)
   on('fs.list', () => ({ value: [] }))
@@ -686,54 +738,107 @@ test('nothing is written or started when the task has no log file', async ($, on
     ran.push([...e.argv])
     return exited(0)
   })
-  on('ui.toast', (_, e) => {
-    toasts.push(e.text)
-    return { value: undefined }
-  })
-  await stopWith($, [{ type: 'shell', text: 'Vanished' }])
-  await toggle($)
-
-  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  await $.ui.press(openRow)
-  await ui.unmount()
-  expect(written).toEqual([])
-  expect(ran).toEqual([])
-  expect(toasts).toEqual(['No log available'])
-})
-
-test('a task id that is not plain letters and digits is never turned into a command', async ($, on) => {
-  const written: string[] = []
-  on('classic.Stop', () => ({}))
-  session(on)
-  logFiles(on, 'x\n')
-  on('fs.write', (_, e) => {
-    written.push(e.path)
-    return { value: undefined }
-  })
-  on('process.run', () => exited(0))
   on('ui.toast', () => ({ value: undefined }))
   await $.classic.Stop({
     stop_hook_active: false,
-    background_tasks: [{ id: 'x;touch pwned', type: 'shell', status: 'running', description: 'Evil' }],
+    background_tasks: [
+      { id: 'id0', type: 'shell', status: 'running', description: 'No file' },
+      { id: 'x;touch pwned', type: 'shell', status: 'running', description: 'Evil' },
+    ],
   })
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  await $.ui.press({ plugin: 'bg-indicator', key: 'open-x;touch pwned', surface: 'terminal' })
+  await $.ui.press(termRow)
+  await $.ui.press({ plugin: 'bg-indicator', key: 'term-x;touch pwned', surface: 'terminal' })
   await ui.unmount()
+  expect(ran).toEqual([])
   expect(written).toEqual([])
 })
 
-test('a wake-up has no arrow button, because it has no log to follow', async ($, on) => {
+// ── Small type, narrow band, arrows ──────────────────────────────────────────
+
+const narrow = (columns: number) => ({ ...BAND, props: { ...BAND.props, bodyColumns: columns } }) as const
+
+test('the band is drawn in small type so it takes little room in the chat', async ($, on) => {
   on('classic.Stop', () => ({}))
-  await $.classic.Stop({
-    stop_hook_active: false,
-    background_tasks: [],
-    session_crons: [{ id: 'w1', schedule: '0 9 * * *', recurring: false, prompt: 'Resume' }],
-  })
+  session(on)
+  logFiles(on, 'line 1\nline 2\n', 14)
+  await stopWith($, [
+    { type: 'shell', text: 'One' },
+    { type: 'shell', text: 'Two' },
+  ])
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect(await ui.find({ type: 'Button', text: '↗' })).toBeUndefined()
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
+  const size = async (query: { type: string; text: RegExp }) => (await ui.find(query))?.props['size']
+  expect(await size({ type: 'Text', text: /Background Tasks/ })).toBe('footnote')
+  expect(await size({ type: 'Text', text: /^1\. One/ })).toBe('footnote')
+  expect(await size({ type: 'Text', text: /line 2/ })).toBe('caption')
+  expect((await ui.find({ type: 'Text', text: /line 2/ }))?.props['mono']).toBe(true)
+  await ui.unmount()
+})
+
+test('lines are cut to the width of the band so none wraps', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  session(on)
+  logFiles(on, `${'x'.repeat(90)}\n`, 92)
+  await stopWith($, [{ type: 'shell', text: 'A very long description of a task that would wrap in a narrow band' }])
+  await toggle($)
+
+  // The band of the VS Code panel is about 49 columns wide.
+  const ui = await $.ui.mount({ ...narrow(49), surface: 'terminal' })
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
+  const row = (await ui.find({ type: 'Text', text: /^1\. / }))?.text ?? ''
+  expect(Array.from(row).length).toBeLessThanOrEqual(33 + 4)
+  const log_ = (await ui.findAll({ type: 'Text', text: /^ x+/ })).map(t => t.text)
+  expect(log_).toHaveLength(1)
+  expect(Array.from(log_[0] ?? '').length).toBeLessThanOrEqual(1 + 41)
+  expect(log_[0]?.endsWith('…')).toBe(true)
+  await ui.unmount()
+})
+
+test('the arrow buttons move the open log by five lines, and the follow button returns to the end', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  session(on)
+  logFiles(on, longLog)
+  await stopWith($, [{ type: 'shell', text: 'Long job' }])
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
+  const first = async () => (await gutter(ui))[0]
+  const press = (key: string) => $.ui.press({ plugin: 'bg-indicator', key, surface: 'terminal' })
+
+  expect(await first()).toBe(' line 31')
+  expect(await ui.find({ type: 'Button', key: 'follow' })).toBeUndefined()
+  await press('up')
+  expect(await first()).toBe(' line 26')
+  expect(await ui.find({ type: 'Button', key: 'follow' })).toBeDefined()
+  await press('up')
+  await press('up')
+  expect(await first()).toBe(' line 16')
+  await press('down')
+  expect(await first()).toBe(' line 21')
+  await press('follow')
+  expect(await first()).toBe(' line 31')
+  // Going down from the end changes nothing, and the arrows are offered only when the log is longer than the window.
+  await press('down')
+  expect(await first()).toBe(' line 31')
+  await ui.unmount()
+})
+
+test('a log that fits in the window has no arrows', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  session(on)
+  logFiles(on, 'line 1\nline 2\n', 14)
+  await stopWith($, [{ type: 'shell', text: 'Short' }])
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
+  expect(await ui.find({ type: 'Button', key: 'up' })).toBeUndefined()
+  expect(await ui.find({ type: 'Button', key: 'down' })).toBeUndefined()
   await ui.unmount()
 })
