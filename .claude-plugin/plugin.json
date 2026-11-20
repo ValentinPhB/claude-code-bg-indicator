@@ -1,0 +1,26 @@
+{
+  "name": "bg-indicator",
+  "version": "0.2.0",
+  "description": "See Claude Code background tasks at a glance: a live band above the prompt for running shell commands, monitors and subagents",
+  "author": {
+    "name": "ValentinPhB"
+  },
+  "repository": "https://github.com/ValentinPhB/claude-code-bg-indicator",
+  "license": "MIT",
+  "keywords": [
+    "claude-code",
+    "claude-code-plugin",
+    "claude-code-mod",
+    "background-tasks",
+    "background-task-indicator",
+    "run_in_background",
+    "monitor",
+    "subagents",
+    "progress",
+    "spinner",
+    "status",
+    "ui",
+    "prompt-band"
+  ],
+  "types": "./types/index.d.ts"
+}

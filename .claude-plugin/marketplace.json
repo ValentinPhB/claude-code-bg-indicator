@@ -1,0 +1,23 @@
+{
+  "name": "bg-indicator-marketplace",
+  "owner": {
+    "name": "ValentinPhB"
+  },
+  "plugins": [
+    {
+      "name": "bg-indicator",
+      "source": "./",
+      "description": "See Claude Code background tasks at a glance: a live band above the prompt for running shell commands, monitors and subagents",
+      "keywords": [
+        "claude-code",
+        "background-tasks",
+        "indicator",
+        "monitor",
+        "subagents",
+        "progress",
+        "status",
+        "ui"
+      ]
+    }
+  ]
+}
