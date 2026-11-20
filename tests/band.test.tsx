@@ -244,9 +244,10 @@ test('long descriptions are clipped by terminal columns, in any script', () => {
   expect(Array.from(clipped).every(ch => ch === '🚀' || ch === '…')).toBe(true)
 })
 
-test('a scheduled label is clipped by columns and never empty', () => {
+test('a scheduled label is bounded, keeps the full prompt for the hover, and is never empty', () => {
   expect(scheduledLabel('')).toBe('⏰ scheduled')
-  expect(Array.from(scheduledLabel('x'.repeat(200))).length).toBeLessThanOrEqual(60)
+  expect(Array.from(scheduledLabel('x'.repeat(200))).length).toBe(202)
+  expect(Array.from(scheduledLabel('x'.repeat(1000))).length).toBeLessThanOrEqual(400)
 })
 
 test('the kind of a task started by a tool call follows the tool', () => {
@@ -844,5 +845,22 @@ test('a log that fits in the window has no arrows', async ($, on) => {
   await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
   expect(await ui.find({ type: 'Button', key: 'up' })).toBeUndefined()
   expect(await ui.find({ type: 'Button', key: 'down' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('a title cut to fit the band is shown in full, hidden until the pointer is on its row', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  session(on)
+  const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet'
+  await stopWith($, [
+    { type: 'shell', text: long },
+    { type: 'shell', text: 'Short' },
+  ])
+  await toggle($)
+
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  const full = await ui.find({ type: 'Text', text: /relancer le test complet$/ })
+  expect(full?.text).toBe(long)
+  expect(await ui.find({ type: 'Text', text: /^Short$/ })).toBeUndefined()
   await ui.unmount()
 })

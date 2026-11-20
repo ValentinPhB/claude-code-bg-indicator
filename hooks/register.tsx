@@ -12,7 +12,8 @@ const log = atom({ plugin: 'bg-indicator', key: 'log' } as const, null as LogVie
 const logTop = atom({ plugin: 'bg-indicator', key: 'logTop' } as const, null as number | null)
 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
-const MAX_WIDTH = 60
+/** Longest title kept for a task: the band cuts it to fit, the hover shows it in full, so the text is never lost. */
+const MAX_TITLE = 400
 /** Rows of the unfolded list; the rest is summarised so a long list never pushes the prompt off the screen. */
 const MAX_ROWS = 10
 /** One task's log: how many of its last lines are kept, how many show at once, and how wide they may be. */
@@ -141,11 +142,11 @@ export const kindOfTool = (tool: string) =>
 export const kindOf = (task: { kind?: string | undefined }) => task.kind || 'task'
 
 export const labelOf = (item: Describable) =>
-  clip((item.description || item.command || item.type || 'task').replace(/\s+/g, ' ').trim(), MAX_WIDTH)
+  clip((item.description || item.command || item.type || 'task').replace(/\s+/g, ' ').trim(), MAX_TITLE)
 
 /** A wake-up that will resume the session later: shown with a clock and the prompt it will submit. */
 export const scheduledLabel = (prompt: string) =>
-  `⏰ ${clip((prompt || 'scheduled').replace(/\s+/g, ' ').trim(), MAX_WIDTH - 3)}`
+  `⏰ ${clip((prompt || 'scheduled').replace(/\s+/g, ' ').trim(), MAX_TITLE - 3)}`
 
 // ── Logs ─────────────────────────────────────────────────────────────────────
 // Claude Code keeps the output of each background task in a file of its session's temporary folder. The mod
@@ -480,6 +481,12 @@ export const register: Register = on => {
             <Box key={`row-${t.id}`} flexDirection="column">
               <Box>
                 <Text size="footnote">{`${i + 1}. ${clip(t.label, labelWidth)} `}</Text>
+                {clip(t.label, labelWidth) !== t.label ? (
+                  // The title is cut to fit the band: the full text appears over the row while the pointer is on it.
+                  <Box position="absolute" top={1} left={2} display="none" hover={{ display: 'flex' }} borderStyle="round" paddingX={1} width={Math.max(20, columns - 4)}>
+                    <Text size="footnote">{t.label}</Text>
+                  </Box>
+                ) : null}
                 <Button key={`task-${t.id}`} label={openId === t.id ? '▴' : '▾'} onPress={() => press(t)}>
                   <Text size="footnote">{openId === t.id ? '▴' : '▾'}</Text>
                 </Button>

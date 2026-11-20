@@ -172,7 +172,7 @@ setting, then the `LC_ALL`, `LC_MESSAGES` and `LANG` environment variables, and 
 
 - Task descriptions come from your session and are shown as they are, in any script (Latin, Cyrillic, CJK, emoji...).
 - Long descriptions are clipped by **terminal columns**, not by characters: CJK characters and emoji take two columns,
-  and an emoji is never cut in half.
+  and an emoji is never cut in half. A clipped title is **never lost**: hover its row to read it in full.
 - **Add your language**: add one line to `MESSAGES` and one to `ALIASES` in [`hooks/register.tsx`](hooks/register.tsx),
   then open a pull request. A native speaker's wording is always better than a translation tool's.
 
@@ -188,8 +188,8 @@ It reads files to show a task's log, and writes a file only when you press `>_` 
 | `ui.render` on `AbovePrompt` | Draws the band (and, once unfolded, the list and the log of the task you opened) when there is something to show, or lets the default prompt area through when there is not. |
 | `session.start` | Starts a timer that advances the spinner only while a task is shown, so an idle session is never redrawn. |
 
-Descriptions come from the task's own `description` (falling back to its command, then its type) and are clipped to 60
-characters.
+Descriptions come from the task's own `description` (falling back to its command, then its type) and are kept up to 400
+characters; the band cuts them to fit and the hover shows them in full.
 
 ## Limits
 
