@@ -593,7 +593,7 @@ test('only safe ids and paths reach the command that follows a log', () => {
   for (const bad of ['', 'a b', 'a;rm -rf /', '$(id)', '../x', 'a/b', "it's", 'x'.repeat(65)]) {
     expect(isSafeId(bad)).toBe(false)
   }
-  expect(isSafePath('/private/tmp/claude-501/-work-app/s1/tasks/b1.output')).toBe(true)
+  expect(isSafePath('/private/tmp/claude-1000/-work-app/s1/tasks/b1.output')).toBe(true)
   for (const bad of ['relative/path', '/tmp/a b', '/tmp/../etc/passwd', "/tmp/a'b", '/tmp/$(id)', '/tmp/a;b', '']) {
     expect(isSafePath(bad)).toBe(false)
   }
