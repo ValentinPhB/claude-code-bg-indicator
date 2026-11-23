@@ -17,7 +17,7 @@ const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '
 /** Longest title kept for a task: the band cuts it to fit, the hover shows it in full, so the text is never lost. */
 const MAX_TITLE = 400
 /** Columns of a task title the band draws before it is cut (the "…" button opens it in full). */
-const TITLE_CHARS = 35
+const TITLE_CHARS = 45
 /** Rows of the unfolded list; the rest is summarised so a long list never pushes the prompt off the screen. */
 const MAX_ROWS = 10
 /** One task's log: how many of its last lines are kept, how many show at once, and how wide they may be. */
@@ -329,7 +329,7 @@ export const detaches = (command: string): boolean =>
   /\b(nohup|setsid|disown)\b/.test(command) || /(^|[^&>|])&\s*(\)|\}|;|$)/m.test(command)
 
 const TRACK_RULE =
-  'Background work: start any long-running or detached process (servers, tunnels, watchers, long builds or tests) with the Bash tool\'s run_in_background option, never with `&`, `nohup`, `setsid` or `disown`: only a process started that way is tracked by Claude Code, shown in the background tasks band and reported when it ends. Say what runs in the background each time you hand control back. Give every background task (the description of a Bash call run in the background, a subagent or a scheduled wake-up) a title that is as concise and precise as possible, and use as much of the 35 characters the band shows as it takes to be clear: the verb, the object and the target, no filler.'
+  'Background work: start any long-running or detached process (servers, tunnels, watchers, long builds or tests) with the Bash tool\'s run_in_background option, never with `&`, `nohup`, `setsid` or `disown`: only a process started that way is tracked by Claude Code, shown in the background tasks band and reported when it ends. Say what runs in the background each time you hand control back. Give every background task (the description of a Bash call run in the background, a subagent or a scheduled wake-up) a title that is as concise and precise as possible, and use as much of the 45 characters the band shows as it takes to be clear: the verb, the object and the target, no filler.'
 
 export const register: Register = (on, options) => {
   let texts = textsFor('en')

@@ -871,7 +871,7 @@ test('a title is kept on one row: cut without an ellipsis, a "…" button after 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   const row = (await ui.find({ type: 'Text', text: /^1\. a+/ }))?.text ?? ''
   expect(row.includes('…')).toBe(false)
-  expect(row).toBe(`1. ${'a'.repeat(35)} `)
+  expect(row).toBe(`1. ${'a'.repeat(45)} `)
   expect(await ui.find({ type: 'Button', key: 'more-id0' })).toBeDefined()
   // A title that fits has no such button.
   expect(await ui.find({ type: 'Button', key: 'more-id1' })).toBeUndefined()
