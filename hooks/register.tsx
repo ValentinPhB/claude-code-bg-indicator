@@ -14,8 +14,6 @@ const logTop = atom({ plugin: 'bg-indicator', key: 'logTop' } as const, null as 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 /** Longest title kept for a task: the band cuts it to fit, the hover shows it in full, so the text is never lost. */
 const MAX_TITLE = 400
-/** Columns of a title drawn in the band before it is cut (it wraps over several lines). */
-const LABEL_SHOWN = 120
 /** Rows of the unfolded list; the rest is summarised so a long list never pushes the prompt off the screen. */
 const MAX_ROWS = 10
 /** One task's log: how many of its last lines are kept, how many show at once, and how wide they may be. */
@@ -423,10 +421,10 @@ export const register: Register = on => {
     const hidden = list.length - shown.length
     // The band is narrow (about 50 columns in VS Code): every line is cut to fit, so none wraps and the rows stay aligned.
     const columns = e.props.bodyColumns
-    // The title is shown up to LABEL_SHOWN columns and wraps in the room left beside the buttons; beyond that, hover or unfold.
-    const labelWidth = LABEL_SHOWN
     const titleBox = Math.max(16, columns - 14)
     const lineWidth = Math.max(16, columns - 8)
+    // A title that does not fit on its one line is cut with an ellipsis; hover or unfold shows it whole.
+    const isCut = (label: string) => label.length + 4 > titleBox
 
     // Folding the list closes the open log too, so nothing keeps being read behind a folded band.
     const flip = async (wasOpen: boolean) => {
@@ -485,9 +483,9 @@ export const register: Register = on => {
             <Box key={`row-${t.id}`} flexDirection="column">
               <Box>
                 <Box width={titleBox}>
-                  <Text size="footnote">{`${i + 1}. ${clip(t.label, labelWidth)} `}</Text>
+                  <Text size="footnote" wrap="truncate-end">{`${i + 1}. ${t.label} `}</Text>
                 </Box>
-                {clip(t.label, labelWidth) !== t.label ? (
+                {isCut(t.label) ? (
                   // The title is cut to fit the band: the full text appears over the row while the pointer is on it.
                   <Box position="absolute" top={1} left={2} display="none" hover={{ display: 'flex' }} borderStyle="round" paddingX={1} width={Math.max(20, columns - 4)}>
                     <Text size="footnote">{t.label}</Text>
@@ -503,7 +501,7 @@ export const register: Register = on => {
                   </Button>
                 ) : null}
               </Box>
-              {openId === t.id && clip(t.label, labelWidth) !== t.label ? (
+              {openId === t.id && isCut(t.label) ? (
                 // Always readable, whatever the pointer does: the unfolded row carries the full title.
                 <Text dimColor size="caption">{`   ${t.label}`}</Text>
               ) : null}

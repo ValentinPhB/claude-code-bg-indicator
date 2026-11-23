@@ -860,7 +860,7 @@ test('a title cut to fit the band is shown in full, hidden until the pointer is 
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  const full = await ui.find({ type: 'Text', text: /nettoyer ensuite tous les documents de test\s*$/ })
+  const full = await ui.find({ type: 'Text', text: /^Formater.*nettoyer ensuite tous les documents de test$/ })
   expect(full?.text).toBe(long)
   expect(await ui.find({ type: 'Text', text: /^Short$/ })).toBeUndefined()
   await ui.unmount()
