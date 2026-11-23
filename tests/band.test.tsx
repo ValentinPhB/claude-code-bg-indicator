@@ -4,6 +4,7 @@ import type { On } from 'claude-code'
 
 import {
   clip,
+  detaches,
   followCommand,
   followScript,
   isSafeId,
@@ -888,4 +889,25 @@ test('a title is drawn up to 120 columns before it is cut', async ($, on) => {
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: /^1\. a+/ }))?.text).toBe(`1. ${title} `)
   await ui.unmount()
+})
+
+test('detaching commands are recognised, tracked ones are not', () => {
+  for (const c of ['nohup sh run.sh > log &', 'sleep 5 &', '(server &)', 'setsid job', 'job & disown', 'a; b &']) expect(detaches(c)).toBe(true)
+  for (const c of ['ls && echo ok', 'cmd 2>&1', 'a | b', 'echo "a & b"x', 'npm run build']) expect(detaches(c)).toBe(false)
+})
+
+test('block mode refuses a detaching command, and lets a tracked or plain one through', { options: { trackBackground: 'block' } }, async ($, on) => {
+  on('tool.call', { tool: 'Bash' }, () => ({ result: 'ran', text: 'ran' }))
+  const refused = await $.tool.call({ tool: 'Bash', command: 'nohup sh tunnel.sh > log 2>&1 &' })
+  expect(refused.deny).toContain('run_in_background')
+  const tracked = await $.tool.call({ tool: 'Bash', command: 'sh tunnel.sh', run_in_background: true })
+  expect(tracked.text).toBe('ran')
+  const plain = await $.tool.call({ tool: 'Bash', command: 'echo ok' })
+  expect(plain.text).toBe('ran')
+})
+
+test('the default mode never refuses a command', async ($, on) => {
+  on('tool.call', { tool: 'Bash' }, () => ({ result: 'ran', text: 'ran' }))
+  const result = await $.tool.call({ tool: 'Bash', command: 'sleep 1 &' })
+  expect(result.text).toBe('ran')
 })

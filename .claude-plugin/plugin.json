@@ -44,5 +44,18 @@
     "compact",
     "small-type"
   ],
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "trackBackground": {
+      "type": "string",
+      "title": "Track background tasks",
+      "description": "remind: tell Claude to start background work with run_in_background so the band shows it (default). block: also refuse commands that detach a process (&, nohup, setsid, disown). off: do neither.",
+      "default": "remind",
+      "options": [
+        "remind",
+        "block",
+        "off"
+      ]
+    }
+  }
 }

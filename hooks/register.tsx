@@ -320,8 +320,32 @@ const openTerminal = async ($: EngineInterface, task: Task, texts: Texts) => {
   await $.ui.toast(texts.noTerminal)
 }
 
-export const register: Register = on => {
+/** True for a shell command that detaches a process from Claude Code: nohup, setsid, disown or a trailing `&` (not `&&`, `>&`, `|&`). */
+export const detaches = (command: string): boolean =>
+  /\b(nohup|setsid|disown)\b/.test(command) || /(^|[^&>|])&\s*(\)|\}|;|$)/m.test(command)
+
+const TRACK_RULE =
+  'Background work: start any long-running or detached process (servers, tunnels, watchers, long builds or tests) with the Bash tool\'s run_in_background option, never with `&`, `nohup`, `setsid` or `disown`: only a process started that way is tracked by Claude Code, shown in the background tasks band and reported when it ends. Say what runs in the background each time you hand control back.'
+
+export const register: Register = (on, options) => {
   let texts = textsFor('en')
+  const track = typeof options['trackBackground'] === 'string' ? options['trackBackground'] : 'remind'
+
+  // remind (default) and block: tell the model to use run_in_background so every background task is tracked and shown.
+  if (track !== 'off') {
+    on('prompt.compose', async (_$, e, next) => {
+      const composed = await next(e)
+      return { sections: [...composed.sections, { id: 'bg-indicator:track', text: TRACK_RULE, scope: 'session' as const }] }
+    })
+  }
+  // block: also refuse a Bash command that detaches a process, with the reason, so it is retried tracked.
+  if (track === 'block') {
+    on('tool.call', { tool: 'Bash' }, (_$, e, next) =>
+      e.run_in_background !== true && detaches(e.command)
+        ? { deny: 'bg-indicator: this command detaches a process Claude Code cannot track. Run it again with run_in_background set to true instead of `&`, `nohup`, `setsid` or `disown`.' }
+        : next(e),
+    ).catch((_$, e, next) => (next.called ? next(e) : { deny: 'bg-indicator: its guard failed.' }))
+  }
 
   on('session.start', async ($, e, next) => {
     try {

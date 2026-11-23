@@ -36,6 +36,21 @@ Yes, this one. It shows every task Claude Code itself tracks as a background tas
 
 They are complementary: keep your statusline and notifications, and add this band for what is still running.
 
+## Keep every background task visible
+
+The band only shows tasks Claude Code tracks, i.e. those started with the Bash tool's `run_in_background` option. A
+process detached with `&`, `nohup`, `setsid` or `disown` runs but is invisible to Claude Code, so the band cannot list
+it. The plugin therefore adds one rule to Claude's instructions (default `remind`: start background work with
+`run_in_background`). Setting `trackBackground` (plugin options) changes it:
+
+| Value | Effect |
+| --- | --- |
+| `remind` (default) | tells Claude to use `run_in_background` |
+| `block` | also refuses a Bash command that detaches a process, with the reason, so Claude retries it tracked |
+| `off` | does neither |
+
+*(FR : le bandeau ne voit que les tâches suivies par Claude Code ; le plugin demande donc à Claude de lancer les tâches de fond avec `run_in_background`, et en mode `block` refuse les commandes détachées.)*
+
 ## Install
 
 In a terminal session, at the prompt:
