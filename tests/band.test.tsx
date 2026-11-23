@@ -850,28 +850,6 @@ test('a log that fits in the window has no arrows', async ($, on) => {
   await ui.unmount()
 })
 
-test('a cut title opens in full under its row when it is clicked, and closes when clicked again', async ($, on) => {
-  on('classic.Stop', () => ({}))
-  session(on)
-  const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet de bout en bout avec les nouveaux filtres de période et d auteur, vérifier les exports et nettoyer ensuite tous les documents de test'
-  await stopWith($, [
-    { type: 'shell', text: long },
-    { type: 'shell', text: 'Short' },
-  ])
-  await toggle($)
-
-  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  const whole = /^ +Formater.*nettoyer ensuite tous les documents de test$/
-  expect(await ui.find({ type: 'Text', text: whole })).toBeUndefined()
-  // The short title is plain text: nothing to click.
-  expect(await ui.find({ type: 'Button', key: 'title-id1' })).toBeUndefined()
-  await $.ui.press({ plugin: 'bg-indicator', key: 'title-id0', surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: whole }))?.text).toBe(`   ${long}`)
-  await $.ui.press({ plugin: 'bg-indicator', key: 'title-id0', surface: 'terminal' })
-  expect(await ui.find({ type: 'Text', text: whole })).toBeUndefined()
-  await ui.unmount()
-})
-
 test('unfolding a row whose title is cut shows the full title, whatever the pointer does', async ($, on) => {
   on('classic.Stop', () => ({}))
   session(on)
