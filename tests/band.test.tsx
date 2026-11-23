@@ -850,7 +850,7 @@ test('a log that fits in the window has no arrows', async ($, on) => {
   await ui.unmount()
 })
 
-test('a title cut to fit the band is shown in full, hidden until the pointer is on its row', async ($, on) => {
+test('a cut title opens in full under its row when it is clicked, and closes when clicked again', async ($, on) => {
   on('classic.Stop', () => ({}))
   session(on)
   const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet de bout en bout avec les nouveaux filtres de période et d auteur, vérifier les exports et nettoyer ensuite tous les documents de test'
@@ -861,9 +861,14 @@ test('a title cut to fit the band is shown in full, hidden until the pointer is 
   await toggle($)
 
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  const full = await ui.find({ type: 'Text', text: /^ +Formater.*nettoyer ensuite tous les documents de test$/ })
-  expect(full?.text).toBe(`   ${long}`)
-  expect(await ui.find({ type: 'Text', text: /^Short$/ })).toBeUndefined()
+  const whole = /^ +Formater.*nettoyer ensuite tous les documents de test$/
+  expect(await ui.find({ type: 'Text', text: whole })).toBeUndefined()
+  // The short title is plain text: nothing to click.
+  expect(await ui.find({ type: 'Button', key: 'title-id1' })).toBeUndefined()
+  await $.ui.press({ plugin: 'bg-indicator', key: 'title-id0', surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: whole }))?.text).toBe(`   ${long}`)
+  await $.ui.press({ plugin: 'bg-indicator', key: 'title-id0', surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: whole })).toBeUndefined()
   await ui.unmount()
 })
 

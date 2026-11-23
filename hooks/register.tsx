@@ -10,6 +10,8 @@ const viewing = atom({ plugin: 'bg-indicator', key: 'viewing' } as const, null a
 const log = atom({ plugin: 'bg-indicator', key: 'log' } as const, null as LogView | null)
 /** First visible line of the open log, or null while it follows the end (the live tail). */
 const logTop = atom({ plugin: 'bg-indicator', key: 'logTop' } as const, null as number | null)
+/** Ids of the tasks whose cut title is opened in full under their row (a click on the title). */
+const fullTitles = atom({ plugin: 'bg-indicator', key: 'fullTitles' } as const, [] as string[])
 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 /** Longest title kept for a task: the band cuts it to fit, the hover shows it in full, so the text is never lost. */
@@ -440,6 +442,7 @@ export const register: Register = (on, options) => {
     const openId = await read($, viewing)
     const view = await read($, log)
     const top = await read($, logTop)
+    const titlesOpen = await read($, fullTitles)
     const { Box, Button, Text } = $.ui.resolve(e)
     const shown = list.slice(0, MAX_ROWS)
     const hidden = list.length - shown.length
@@ -508,7 +511,14 @@ export const register: Register = (on, options) => {
           return (
             <Box key={`row-${t.id}`} flexDirection="column">
               <Box>
-                <Text size="footnote">{`${clip(`${i + 1}. ${t.label}`, rowWidth)} `}</Text>
+                {isCut(t.label, i + 1) ? (
+                  // A cut title is a click target: it opens (or closes) the full title under the row.
+                  <Button key={`title-${t.id}`} label={t.label} plain onPress={() => update($, fullTitles, ids => (ids.includes(t.id) ? ids.filter(x => x !== t.id) : [...ids, t.id]))}>
+                    <Text size="footnote">{`${clip(`${i + 1}. ${t.label}`, rowWidth)} `}</Text>
+                  </Button>
+                ) : (
+                  <Text size="footnote">{`${i + 1}. ${t.label} `}</Text>
+                )}
                 <Button key={`task-${t.id}`} label={openId === t.id ? '▴' : '▾'} onPress={() => press(t)}>
                   <Text size="footnote">{openId === t.id ? '▴' : '▾'}</Text>
                 </Button>
@@ -519,14 +529,8 @@ export const register: Register = (on, options) => {
                   </Button>
                 ) : null}
               </Box>
-              {isCut(t.label, i + 1) && openId !== t.id ? (
-                // A cut title: its full text opens under the row while the pointer is on the row.
-                <Box display="none" hover={{ display: 'flex' }}>
-                  <Text dimColor size="caption">{`   ${t.label}`}</Text>
-                </Box>
-              ) : null}
-              {isCut(t.label, i + 1) && openId === t.id ? (
-                // Always readable, whatever the pointer does: the unfolded row carries the full title.
+              {isCut(t.label, i + 1) && (openId === t.id || titlesOpen.includes(t.id)) ? (
+                // The full title, readable whatever the pointer does: opened by a click on the title or by unfolding the row.
                 <Text dimColor size="caption">{`   ${t.label}`}</Text>
               ) : null}
               {log_ !== null && range !== null ? (
