@@ -508,15 +508,7 @@ export const register: Register = (on, options) => {
           return (
             <Box key={`row-${t.id}`} flexDirection="column">
               <Box>
-                <Box width={titleBox}>
-                  <Text size="footnote" wrap="truncate-end" maxLines={1}>{`${clip(`${i + 1}. ${t.label}`, rowWidth)} `}</Text>
-                </Box>
-                {isCut(t.label, i + 1) ? (
-                  // The title is cut to fit the band: the full text appears over the row while the pointer is on it.
-                  <Box position="absolute" top={1} left={2} display="none" hover={{ display: 'flex' }} borderStyle="round" paddingX={1} width={Math.max(20, columns - 4)}>
-                    <Text size="footnote">{t.label}</Text>
-                  </Box>
-                ) : null}
+                <Text size="footnote">{`${clip(`${i + 1}. ${t.label}`, rowWidth)} `}</Text>
                 <Button key={`task-${t.id}`} label={openId === t.id ? '▴' : '▾'} onPress={() => press(t)}>
                   <Text size="footnote">{openId === t.id ? '▴' : '▾'}</Text>
                 </Button>
@@ -527,7 +519,13 @@ export const register: Register = (on, options) => {
                   </Button>
                 ) : null}
               </Box>
-              {openId === t.id && isCut(t.label, i + 1) ? (
+              {isCut(t.label, i + 1) && openId !== t.id ? (
+                // A cut title: its full text opens under the row while the pointer is on the row.
+                <Box display="none" hover={{ display: 'flex' }}>
+                  <Text dimColor size="caption">{`   ${t.label}`}</Text>
+                </Box>
+              ) : null}
+              {isCut(t.label, i + 1) && openId === t.id ? (
                 // Always readable, whatever the pointer does: the unfolded row carries the full title.
                 <Text dimColor size="caption">{`   ${t.label}`}</Text>
               ) : null}
