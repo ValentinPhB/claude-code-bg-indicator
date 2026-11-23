@@ -507,7 +507,7 @@ export const register: Register = (on, options) => {
             <Box key={`row-${t.id}`} flexDirection="column">
               <Box>
                 <Box width={titleBox}>
-                  <Text size="footnote" wrap="truncate-end">{`${i + 1}. ${t.label} `}</Text>
+                  <Text size="footnote" wrap="truncate-end" maxLines={1}>{`${i + 1}. ${t.label} `}</Text>
                 </Box>
                 {isCut(t.label) ? (
                   // The title is cut to fit the band: the full text appears over the row while the pointer is on it.
