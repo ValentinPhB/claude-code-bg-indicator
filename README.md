@@ -204,7 +204,7 @@ It reads files to show a task's log, and writes a file only when you press `>_` 
 | `session.start` | Starts a timer that advances the spinner only while a task is shown, so an idle session is never redrawn. |
 
 Descriptions come from the task's own `description` (falling back to its command, then its type) and are kept up to 400
-characters; the band cuts them to fit on one row, and the `…` button shows them in full.
+characters; the band cuts them to 35 characters on one row, and the `…` button shows them in full. The plugin also tells Claude to word each background task's title as concisely and precisely as possible, using up to those 35 characters.
 
 ## Limits
 

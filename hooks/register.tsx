@@ -16,6 +16,8 @@ const fullTitles = atom({ plugin: 'bg-indicator', key: 'fullTitles' } as const, 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 /** Longest title kept for a task: the band cuts it to fit, the hover shows it in full, so the text is never lost. */
 const MAX_TITLE = 400
+/** Columns of a task title the band draws before it is cut (the "…" button opens it in full). */
+const TITLE_CHARS = 35
 /** Rows of the unfolded list; the rest is summarised so a long list never pushes the prompt off the screen. */
 const MAX_ROWS = 10
 /** One task's log: how many of its last lines are kept, how many show at once, and how wide they may be. */
@@ -327,7 +329,7 @@ export const detaches = (command: string): boolean =>
   /\b(nohup|setsid|disown)\b/.test(command) || /(^|[^&>|])&\s*(\)|\}|;|$)/m.test(command)
 
 const TRACK_RULE =
-  'Background work: start any long-running or detached process (servers, tunnels, watchers, long builds or tests) with the Bash tool\'s run_in_background option, never with `&`, `nohup`, `setsid` or `disown`: only a process started that way is tracked by Claude Code, shown in the background tasks band and reported when it ends. Say what runs in the background each time you hand control back.'
+  'Background work: start any long-running or detached process (servers, tunnels, watchers, long builds or tests) with the Bash tool\'s run_in_background option, never with `&`, `nohup`, `setsid` or `disown`: only a process started that way is tracked by Claude Code, shown in the background tasks band and reported when it ends. Say what runs in the background each time you hand control back. Give every background task (the description of a Bash call run in the background, a subagent or a scheduled wake-up) a title that is as concise and precise as possible, and use as much of the 35 characters the band shows as it takes to be clear: the verb, the object and the target, no filler.'
 
 export const register: Register = (on, options) => {
   let texts = textsFor('en')
@@ -448,13 +450,11 @@ export const register: Register = (on, options) => {
     const hidden = list.length - shown.length
     // The band is narrow (about 50 columns in VS Code): every line is cut to fit, so none wraps and the rows stay aligned.
     const columns = e.props.bodyColumns
-    const titleBox = Math.max(16, columns - 14)
     const lineWidth = Math.max(16, columns - 8)
     // A title that does not fit on its one line is cut with an ellipsis; hover or unfold shows it whole.
     // The VS Code panel draws a proportional font and wraps by pixels, so the cut is made here, by columns, to keep one row.
-    const rowWidth = Math.max(12, titleBox - 8)
-    // Cut without an ellipsis: the "…" button after the title says there is more.
-    const cutTitle = (label: string, n: number) => clip(`${n}. ${label}`, rowWidth + 1).replace(/…$/, '')
+    // Cut without an ellipsis at TITLE_CHARS columns of title (the "N. " number is extra): the "…" button says there is more.
+    const cutTitle = (label: string, n: number) => `${n}. ${clip(label, TITLE_CHARS + 1).replace(/…$/, '')}`
     const isCut = (label: string, n: number) => cutTitle(label, n) !== `${n}. ${label}`
 
     // Folding the list closes the open log too, so nothing keeps being read behind a folded band.
