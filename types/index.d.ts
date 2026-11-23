@@ -13,6 +13,7 @@ declare module 'claude-code' {
       viewing: string | null
       log: LogView | null
       logTop: number | null
+      fullTitles: string[]
     }
   }
 }

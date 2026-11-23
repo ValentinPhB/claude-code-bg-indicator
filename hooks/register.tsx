@@ -10,6 +10,8 @@ const viewing = atom({ plugin: 'bg-indicator', key: 'viewing' } as const, null a
 const log = atom({ plugin: 'bg-indicator', key: 'log' } as const, null as LogView | null)
 /** First visible line of the open log, or null while it follows the end (the live tail). */
 const logTop = atom({ plugin: 'bg-indicator', key: 'logTop' } as const, null as number | null)
+/** Ids of the tasks whose cut title is opened in full under their row (the "…" button). */
+const fullTitles = atom({ plugin: 'bg-indicator', key: 'fullTitles' } as const, [] as string[])
 
 const FRAMES = ['⠋', '⠙', '⠹', '⠸', '⠼', '⠴', '⠦', '⠧', '⠇', '⠏']
 /** Longest title kept for a task: the band cuts it to fit, the hover shows it in full, so the text is never lost. */
@@ -440,6 +442,7 @@ export const register: Register = (on, options) => {
     const openId = await read($, viewing)
     const view = await read($, log)
     const top = await read($, logTop)
+    const titlesOpen = await read($, fullTitles)
     const { Box, Button, Text } = $.ui.resolve(e)
     const shown = list.slice(0, MAX_ROWS)
     const hidden = list.length - shown.length
@@ -449,8 +452,10 @@ export const register: Register = (on, options) => {
     const lineWidth = Math.max(16, columns - 8)
     // A title that does not fit on its one line is cut with an ellipsis; hover or unfold shows it whole.
     // The VS Code panel draws a proportional font and wraps by pixels, so the cut is made here, by columns, to keep one row.
-    const rowWidth = Math.max(12, titleBox - 4)
-    const isCut = (label: string, n: number) => clip(`${n}. ${label}`, rowWidth) !== `${n}. ${label}`
+    const rowWidth = Math.max(12, titleBox - 8)
+    // Cut without an ellipsis: the "…" button after the title says there is more.
+    const cutTitle = (label: string, n: number) => clip(`${n}. ${label}`, rowWidth + 1).replace(/…$/, '')
+    const isCut = (label: string, n: number) => cutTitle(label, n) !== `${n}. ${label}`
 
     // Folding the list closes the open log too, so nothing keeps being read behind a folded band.
     const flip = async (wasOpen: boolean) => {
@@ -508,7 +513,13 @@ export const register: Register = (on, options) => {
           return (
             <Box key={`row-${t.id}`} flexDirection="column">
               <Box>
-                <Text size="footnote">{`${clip(`${i + 1}. ${t.label}`, rowWidth)} `}</Text>
+                <Text size="footnote">{`${cutTitle(t.label, i + 1)} `}</Text>
+                {isCut(t.label, i + 1) ? (
+                  <Button key={`more-${t.id}`} label="…" onPress={() => update($, fullTitles, ids => (ids.includes(t.id) ? ids.filter(x => x !== t.id) : [...ids, t.id]))}>
+                    <Text size="footnote">…</Text>
+                  </Button>
+                ) : null}
+                {isCut(t.label, i + 1) ? <Text size="footnote"> </Text> : null}
                 <Button key={`task-${t.id}`} label={openId === t.id ? '▴' : '▾'} onPress={() => press(t)}>
                   <Text size="footnote">{openId === t.id ? '▴' : '▾'}</Text>
                 </Button>
@@ -519,8 +530,8 @@ export const register: Register = (on, options) => {
                   </Button>
                 ) : null}
               </Box>
-              {isCut(t.label, i + 1) && openId === t.id ? (
-                // The full title, readable whatever the pointer does: unfolding the row (▾) shows it under the cut one.
+              {isCut(t.label, i + 1) && (openId === t.id || titlesOpen.includes(t.id)) ? (
+                // The full title, under the cut one: opened by the "…" button, or by unfolding the row (▾).
                 <Text dimColor size="caption">{`   ${t.label}`}</Text>
               ) : null}
               {log_ !== null && range !== null ? (

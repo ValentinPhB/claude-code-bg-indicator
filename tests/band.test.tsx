@@ -864,14 +864,32 @@ test('unfolding a row whose title is cut shows the full title, whatever the poin
   await ui.unmount()
 })
 
-test('a title is kept on one row: cut with an ellipsis to the room beside the buttons', async ($, on) => {
+test('a title is kept on one row: cut without an ellipsis, a "…" button after it', async ($, on) => {
   on('classic.Stop', () => ({}))
-  await stopWith($, [{ type: 'shell', text: 'a'.repeat(110) }])
+  await stopWith($, [{ type: 'shell', text: 'a'.repeat(110) }, { type: 'shell', text: 'Short' }])
   await toggle($)
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   const row = (await ui.find({ type: 'Text', text: /^1\. a+/ }))?.text ?? ''
-  expect(row.endsWith('… ')).toBe(true)
-  expect(Array.from(row).length).toBeLessThanOrEqual(80 - 14 - 4 + 1)
+  expect(row.includes('…')).toBe(false)
+  expect(Array.from(row).length).toBeLessThanOrEqual(80 - 14 - 8 + 1)
+  expect(await ui.find({ type: 'Button', key: 'more-id0' })).toBeDefined()
+  // A title that fits has no such button.
+  expect(await ui.find({ type: 'Button', key: 'more-id1' })).toBeUndefined()
+  await ui.unmount()
+})
+
+test('the "…" button opens the cut title in full under its row, and closes it again', async ($, on) => {
+  on('classic.Stop', () => ({}))
+  const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet de bout en bout avec les nouveaux filtres de période et d auteur, vérifier les exports et nettoyer ensuite tous les documents de test'
+  await stopWith($, [{ type: 'shell', text: long }])
+  await toggle($)
+  const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
+  const whole = /^ +Formater.*nettoyer ensuite tous les documents de test$/
+  expect(await ui.find({ type: 'Text', text: whole })).toBeUndefined()
+  await $.ui.press({ plugin: 'bg-indicator', key: 'more-id0', surface: 'terminal' })
+  expect((await ui.find({ type: 'Text', text: whole }))?.text).toBe(`   ${long}`)
+  await $.ui.press({ plugin: 'bg-indicator', key: 'more-id0', surface: 'terminal' })
+  expect(await ui.find({ type: 'Text', text: whole })).toBeUndefined()
   await ui.unmount()
 })
 
