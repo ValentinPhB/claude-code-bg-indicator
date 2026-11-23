@@ -1,6 +1,6 @@
 {
   "name": "bg-indicator",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "description": "See what is still running when Claude hands control back: a compact, live, multilingual band above the prompt, with each background task's scrollable log in a 10-line inset, or in a terminal window",
   "author": {
     "name": "ValentinPhB"

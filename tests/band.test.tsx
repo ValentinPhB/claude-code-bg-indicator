@@ -854,12 +854,12 @@ test('unfolding a row whose title is cut shows the full title, whatever the poin
   on('classic.Stop', () => ({}))
   session(on)
   logFiles(on, 'line 1\n', 14)
-  const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet de bout en bout avec les nouveaux filtres de période et d auteur, vérifier les exports et nettoyer ensuite tous les documents de test'
+  const long = 'Reformat the unrelated files, deploy the service and the interface to staging, rerun the whole end-to-end suite with the new filters, check the exports and then clean up every test document'
   await stopWith($, [{ type: 'shell', text: long }])
   await toggle($)
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
   await $.ui.press({ plugin: 'bg-indicator', key: 'task-id0', surface: 'terminal' })
-  const titles = await ui.findAll({ type: 'Text', text: /nettoyer ensuite tous les documents de test\s*$/ })
+  const titles = await ui.findAll({ type: 'Text', text: /clean up every test document\s*$/ })
   expect(titles.some(x => x.text.trim() === long)).toBe(true)
   await ui.unmount()
 })
@@ -880,11 +880,11 @@ test('a title is kept on one row: cut without an ellipsis, a "…" button after 
 
 test('the "…" button opens the cut title in full under its row, and closes it again', async ($, on) => {
   on('classic.Stop', () => ({}))
-  const long = 'Formater, restaurer les fichiers non liés et déployer API et interface sur le LAB puis relancer le test complet de bout en bout avec les nouveaux filtres de période et d auteur, vérifier les exports et nettoyer ensuite tous les documents de test'
+  const long = 'Reformat the unrelated files, deploy the service and the interface to staging, rerun the whole end-to-end suite with the new filters, check the exports and then clean up every test document'
   await stopWith($, [{ type: 'shell', text: long }])
   await toggle($)
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  const whole = /^ +Formater.*nettoyer ensuite tous les documents de test$/
+  const whole = /^ +Reformat.*clean up every test document$/
   expect(await ui.find({ type: 'Text', text: whole })).toBeUndefined()
   await $.ui.press({ plugin: 'bg-indicator', key: 'more-id0', surface: 'terminal' })
   expect((await ui.find({ type: 'Text', text: whole }))?.text).toBe(`   ${long}`)

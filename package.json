@@ -1,6 +1,6 @@
 {
   "name": "bg-indicator",
-  "version": "0.9.1",
+  "version": "0.9.2",
   "private": true,
   "description": "Development tooling for the bg-indicator Claude Code plugin (the plugin itself needs no build step).",
   "license": "MIT",
