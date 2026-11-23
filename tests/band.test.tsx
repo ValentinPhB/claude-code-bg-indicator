@@ -881,13 +881,14 @@ test('unfolding a row whose title is cut shows the full title, whatever the poin
   await ui.unmount()
 })
 
-test('a title is drawn up to 120 columns before it is cut', async ($, on) => {
+test('a title is kept on one row: cut with an ellipsis to the room beside the buttons', async ($, on) => {
   on('classic.Stop', () => ({}))
-  const title = 'a'.repeat(110)
-  await stopWith($, [{ type: 'shell', text: title }])
+  await stopWith($, [{ type: 'shell', text: 'a'.repeat(110) }])
   await toggle($)
   const ui = await $.ui.mount({ ...BAND, surface: 'terminal' })
-  expect((await ui.find({ type: 'Text', text: /^1\. a+/ }))?.text).toBe(`1. ${title} `)
+  const row = (await ui.find({ type: 'Text', text: /^1\. a+/ }))?.text ?? ''
+  expect(row.endsWith('… ')).toBe(true)
+  expect(Array.from(row).length).toBeLessThanOrEqual(80 - 14 - 4 + 1)
   await ui.unmount()
 })
 

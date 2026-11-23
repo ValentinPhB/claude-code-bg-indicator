@@ -448,7 +448,9 @@ export const register: Register = (on, options) => {
     const titleBox = Math.max(16, columns - 14)
     const lineWidth = Math.max(16, columns - 8)
     // A title that does not fit on its one line is cut with an ellipsis; hover or unfold shows it whole.
-    const isCut = (label: string) => label.length + 4 > titleBox
+    // The VS Code panel draws a proportional font and wraps by pixels, so the cut is made here, by columns, to keep one row.
+    const rowWidth = Math.max(12, titleBox - 4)
+    const isCut = (label: string, n: number) => clip(`${n}. ${label}`, rowWidth) !== `${n}. ${label}`
 
     // Folding the list closes the open log too, so nothing keeps being read behind a folded band.
     const flip = async (wasOpen: boolean) => {
@@ -507,9 +509,9 @@ export const register: Register = (on, options) => {
             <Box key={`row-${t.id}`} flexDirection="column">
               <Box>
                 <Box width={titleBox}>
-                  <Text size="footnote" wrap="truncate-end" maxLines={1}>{`${i + 1}. ${t.label} `}</Text>
+                  <Text size="footnote" wrap="truncate-end" maxLines={1}>{`${clip(`${i + 1}. ${t.label}`, rowWidth)} `}</Text>
                 </Box>
-                {isCut(t.label) ? (
+                {isCut(t.label, i + 1) ? (
                   // The title is cut to fit the band: the full text appears over the row while the pointer is on it.
                   <Box position="absolute" top={1} left={2} display="none" hover={{ display: 'flex' }} borderStyle="round" paddingX={1} width={Math.max(20, columns - 4)}>
                     <Text size="footnote">{t.label}</Text>
@@ -525,7 +527,7 @@ export const register: Register = (on, options) => {
                   </Button>
                 ) : null}
               </Box>
-              {openId === t.id && isCut(t.label) ? (
+              {openId === t.id && isCut(t.label, i + 1) ? (
                 // Always readable, whatever the pointer does: the unfolded row carries the full title.
                 <Text dimColor size="caption">{`   ${t.label}`}</Text>
               ) : null}
